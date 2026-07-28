@@ -1,0 +1,107 @@
+/* AFOSI shared styles — ported from the Claude Design prototypes (helmet blocks) */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: #FBF6EE; }
+a { color: #17150F; text-decoration: none; }
+a:hover { color: #F26522; }
+::selection { background: #F26522; color: #FBF6EE; }
+@keyframes rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes wordIn { from { opacity: 0; transform: translateY(0.5em); } to { opacity: 1; transform: none; } }
+[data-reveal] { transition: opacity 0.9s cubic-bezier(.2,.6,.2,1), transform 0.9s cubic-bezier(.2,.6,.2,1); }
+[data-reveal].pre { opacity: 0; transform: translateY(32px); }
+[data-reveal].on { opacity: 1; transform: none; }
+@keyframes loaderHide { to { opacity: 0; visibility: hidden; } }
+@keyframes afDrift { to { background-position: 26px 26px; } }
+@keyframes mgSpin { to { transform: rotate(360deg); } }
+@keyframes mgBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes bulbSway { 0%, 100% { transform: rotate(-2.4deg); } 50% { transform: rotate(2.4deg); } }
+@keyframes mgUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes ldMergeL { 0% { opacity: 0; transform: translateX(-120px); } 40% { opacity: 1; transform: translateX(0); } 68% { opacity: 1; transform: translateX(0); } 100% { opacity: 0; transform: translateX(0) scale(0.9); } }
+@keyframes ldMergeR { 0% { opacity: 0; transform: translateX(120px); } 40% { opacity: 1; transform: translateX(0); } 68% { opacity: 1; transform: translateX(0); } 100% { opacity: 0; transform: translateX(0) scale(0.9); } }
+@keyframes ldWipe { from { clip-path: inset(0 100% 0 0); opacity: 1; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+@keyframes ldFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@media (prefers-reduced-motion: reduce) { #af-loader * { animation-duration: 0.001s !important; } }
+@media (max-width: 980px) {
+  [style*="grid-template-columns: 1.04fr"], [style*="grid-template-columns:1.04fr"],
+  [style*="grid-template-columns: 1.1fr"], [style*="grid-template-columns:1.1fr"],
+  [style*="grid-template-columns: 1fr 1fr;"], [style*="grid-template-columns:1fr 1fr;"],
+  [style*="grid-template-columns: 1.4fr"], [style*="grid-template-columns:1.4fr"] { grid-template-columns: 1fr !important; }
+  [style*="repeat(3,1fr)"], [style*="repeat(3, 1fr)"] { grid-template-columns: 1fr 1fr !important; }
+  [style*="repeat(4,1fr)"], [style*="repeat(4, 1fr)"] { grid-template-columns: 1fr 1fr !important; }
+  [style*="repeat(5,1fr)"], [style*="repeat(5, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; }
+}
+@media (max-width: 680px) {
+  [style*="repeat(3,1fr)"], [style*="repeat(3, 1fr)"], [style*="repeat(4,1fr)"], [style*="repeat(4, 1fr)"] { grid-template-columns: 1fr !important; }
+  [style*="repeat(5,1fr)"], [style*="repeat(5, 1fr)"] { grid-template-columns: 1fr 1fr !important; }
+  [data-section] { padding-left: 20px !important; padding-right: 20px !important; }
+  [style*="height: 560px"], [style*="height:560px"] { height: 380px !important; }
+  [style*="height: 460px"], [style*="height:460px"] { height: 300px !important; }
+}
+
+/* hover states (converted from the design's style-hover attributes) */
+.hov-cta:hover { background: #F26522 !important; color: #141210 !important; }
+.hov-ink:hover { background: #17150F !important; color: #FBF6EE !important; }
+.hov-paper:hover { background: #FBF6EE !important; color: #141210 !important; }
+.hov-cream:hover { background: #F2EDE4 !important; color: #141210 !important; }
+.hov-border:hover { border-color: #F26522 !important; }
+.hov-shadow:hover { box-shadow: 10px 10px 0 #F26522 !important; }
+.hov-shadow9:hover { box-shadow: 9px 9px 0 #F26522 !important; }
+.hov-keep:hover { color: #17150F !important; }
+.hov-social:hover { background: #F26522 !important; color: #141210 !important; }
+.hov-social2:hover { background: #F26522 !important; color: #141210 !important; border-color: #F26522 !important; }
+.hov-chatclose:hover { color: #FBF6EE !important; border-color: #FBF6EE !important; }
+.hov-prompt:hover { background: #F26522 !important; border-color: #F26522 !important; }
+.hov-send:hover { background: #17150F !important; }
+.hov-send:hover svg { stroke: #F26522 !important; }
+.hov-launch:hover { background: #F26522 !important; color: #141210 !important; box-shadow: 5px 5px 0 #17150F !important; }
+/* Mobile hamburger + full-screen menu.
+   The 9-link nav row overflows below ~1150px, so the burger takes over there,
+   not at phone width. The "Get involved" CTA survives until phone width. */
+@media (max-width: 1150px) {
+  [data-nav-links] { display: none !important; }
+  .af-burger { display: flex !important; }
+}
+@media (max-width: 680px) {
+  .af-nav-cta { display: none !important; }
+}
+@media (max-width: 400px) {
+  #af-mobile-menu a[style*="font-size:32px"] { font-size: 26px !important; }
+}
+
+/* Responsive: extra collapses beyond the design's base rules */
+@media (max-width: 980px) {
+  [style*="grid-template-columns: 1fr 1.1fr"], [style*="grid-template-columns:1fr 1.1fr"] { grid-template-columns: 1fr !important; }
+  /* Two-column flex rows (platforms page): the flex:1/min-width:0 columns
+     shrink forever instead of wrapping — force them to stack. */
+  [style*="gap:56px"][style*="flex-wrap:wrap"] > [style*="flex:1;min-width:0"] { flex: 1 1 100% !important; }
+  /* When stacked, keep the text column above the visual regardless of source order. */
+  [style*="gap:56px"][style*="flex-wrap:wrap"] > div:has([data-preview-frame]),
+  [style*="gap:56px"][style*="flex-wrap:wrap"] > div:has(img[alt="Kiongozi Chat"]) { order: 2; }
+}
+@media (max-width: 680px) {
+  [style*="height: 480px"], [style*="height:480px"], [style*="height: 440px"], [style*="height:440px"] { height: 320px !important; }
+  [style*="padding: 44px 32px"], [style*="padding:44px 32px"] { padding: 28px 20px !important; }
+  [style*="border-right:2px solid #17150F"], [style*="border-right: 2px solid #17150F"] { border-right: none !important; border-bottom: 2px solid #17150F !important; }
+  [style*="width: 360px"][style*="height: 170px"], [style*="width:360px;height:170px"] { width: 280px !important; }
+  #af-loader img[alt="AFOSI"] { width: 230px !important; }
+  /* Platform live-preview panes */
+  [data-live-preview] { height: 250px !important; }
+  /* Tighten oversized desktop section padding on phones ([data-section] already
+     handles left/right gutters) */
+  [style*="padding:130px 40px 100px"] { padding-top: 80px !important; padding-bottom: 70px !important; }
+  [style*="padding:110px 40px"] { padding-top: 70px !important; }
+  [style*="padding:100px 40px"] { padding-top: 64px !important; padding-bottom: 64px !important; }
+  [style*="padding:90px 40px"] { padding-top: 60px !important; padding-bottom: 60px !important; }
+  [style*="padding:80px 40px 70px"] { padding-top: 56px !important; padding-bottom: 50px !important; }
+  [style*="gap:68px"] { gap: 40px !important; }
+  [style*="gap:56px"][style*="flex-wrap:wrap"] { gap: 28px !important; }
+  /* Team page: keep people cards 2-up instead of a single huge column */
+  [data-page="team"] [style*="repeat(4,1fr)"] { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 420px) {
+  /* Immersive-stack headlines bottom out at 52px, which clips on ~320px screens */
+  [style*="font-size:clamp(52px"] { font-size: clamp(38px, 13vw, 52px) !important; }
+  [style*="font-size:clamp(46px"] { font-size: clamp(36px, 12vw, 46px) !important; }
+  [style*="font-size:clamp(44px"] { font-size: clamp(36px, 12vw, 44px) !important; }
+}

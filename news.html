@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>News - AFOSI | Action for Sustainability Initiative</title>
+<link rel="icon" type="image/png" href="/assets/afosi/afosi_logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body data-page="news" data-cms="news">
+<div id="af-page" style="background:#FBF6EE;color:#17150F;font-family:'Manrope',system-ui,sans-serif;font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:clip;">
+
+  <!-- HERO -->
+  <section data-section style="max-width:1320px;margin:0 auto;padding:56px 40px 30px;">
+    <div style="max-width:900px;animation:rise 0.8s cubic-bezier(.2,.6,.2,1) both;">
+      <span style="display:inline-flex;align-items:center;gap:10px;"><span style="width:10px;height:10px;background:#F26522;"></span><span style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;color:currentColor;">News &amp; Newsletters</span></span>
+      <h1 data-scramble style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(44px,5.6vw,86px);line-height:1.02;letter-spacing:-0.03em;margin:16px 0 0;">News &amp; <em style="font-style:normal;color:#F26522;">newsletters.</em></h1>
+      <p style="font-size:20px;line-height:1.6;color:#5A5346;margin:24px 0 0;max-width:660px;">Stay informed about our latest reports, newsletters and organizational updates from across the AFOSI network.</p>
+    </div>
+  </section>
+
+  <!-- FILTER + CARDS -->
+  <section data-section style="max-width:1320px;margin:0 auto;padding:30px 40px 90px;">
+    <div data-filter-group data-reveal style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px;">
+      <button data-filter="all" style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.04em;padding:9px 18px;border:2px solid #F26522;background:#F26522;color:#141210;transition:all 0.2s;">All reports</button><button data-filter="Newsletter" style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.04em;padding:9px 18px;border:2px solid #17150F;background:transparent;color:#141210;transition:all 0.2s;">Newsletters</button><button data-filter="Report" style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.04em;padding:9px 18px;border:2px solid #17150F;background:transparent;color:#141210;transition:all 0.2s;">Reports</button>
+    </div>
+    <div data-news-grid style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+      <!-- News cards are rendered from the AFOSI CMS by /src/cms.js -->
+    </div>
+  </section>
+
+</div>
+<script type="module" src="/src/site.js"></script>
+<script type="module" src="/src/cms.js"></script>
+</body>
+</html>

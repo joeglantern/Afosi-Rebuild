@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output (built on the server)
+dist/
+
+# Local tooling / editor
+.claude/
+.vscode/
+.idea/
+*.log
+
+# Env / secrets
+.env
+.env.*
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
