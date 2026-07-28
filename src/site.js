@@ -569,10 +569,35 @@ function scrambleWord(el, word) {
   })();
 
   var isPhone = function () { return window.matchMedia('(max-width: 640px)').matches; };
+
+  // Phone keyboard handling: keep the panel sized to the *visual* viewport so
+  // the input rides above the on-screen keyboard (iOS keeps the layout
+  // viewport full-height when the keyboard opens; visualViewport is truth).
+  var vvSync = null;
+  if (window.visualViewport) {
+    vvSync = function () {
+      if (!isPhone() || panel.style.display === 'none') {
+        panel.style.removeProperty('--chat-top');
+        panel.style.removeProperty('--chat-h');
+        return;
+      }
+      var vv = window.visualViewport;
+      panel.style.setProperty('--chat-top', vv.offsetTop + 'px');
+      panel.style.setProperty('--chat-h', vv.height + 'px');
+      scrollChat();
+    };
+    window.visualViewport.addEventListener('resize', vvSync);
+    window.visualViewport.addEventListener('scroll', vvSync);
+    // Late keyboard animations: re-sync shortly after focus/blur settle.
+    input.addEventListener('focus', function () { setTimeout(vvSync, 300); setTimeout(scrollChat, 400); });
+    input.addEventListener('blur', function () { setTimeout(vvSync, 300); });
+  }
+
   function setOpen(open) {
     panel.style.display = open ? 'flex' : 'none';
     // Full-screen overlay on phones — freeze the page behind it.
     document.body.style.overflow = open && isPhone() ? 'hidden' : '';
+    if (vvSync) vvSync();
     if (open) { scrollChat(); if (!isPhone()) input.focus(); }
   }
   toggle.addEventListener('click', function () {
@@ -596,10 +621,22 @@ function scrambleWord(el, word) {
   var els = document.querySelectorAll('[data-live-preview]');
   if (!els.length) return;
   var VIEW_W = 1280; // desktop viewport the embedded site renders at
-  // On phones/tablets, skip the heavy cross-origin iframes: they render at
-  // 1280px (overflowing to the right) and three loading at once freeze the
-  // main thread — which locks up the chat widget. Use the screenshot instead.
+  // Phones/tablets: three cross-origin iframes loading at once freeze the main
+  // thread. Instead of skipping them, queue the loads one at a time — the veil
+  // stays up as the loading state until each iframe's load event fires.
   var LITE = window.matchMedia('(max-width: 900px)').matches || window.matchMedia('(pointer: coarse)').matches;
+  var loadQueue = [];
+  var loadBusy = false;
+  function pumpQueue() {
+    if (loadBusy || !loadQueue.length) return;
+    loadBusy = true;
+    var job = loadQueue.shift();
+    var done = false;
+    var next = function () { if (done) return; done = true; loadBusy = false; pumpQueue(); };
+    job.iframe.addEventListener('load', next);
+    setTimeout(next, 12000);           // stuck site? move on, don't block the rest
+    job.iframe.src = job.url;
+  }
 
   function status(frame, text, color) {
     var s = frame ? frame.querySelector('[data-preview-status]') : null;
@@ -656,13 +693,17 @@ function scrambleWord(el, word) {
     el.appendChild(makeVeil(host));
 
     var iframe = document.createElement('iframe');
-    iframe.src = url;
     iframe.title = host + ' — live preview';
     iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
     iframe.style.cssText = 'position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:#FFFFFF;pointer-events:none;opacity:0;transition:opacity 0.7s ease;';
     el.appendChild(iframe);
     fit(el, iframe);
     window.addEventListener('resize', function () { fit(el, iframe); });
+
+    // Kick off the load: parallel on desktop, queued one-at-a-time on touch
+    // devices so the main thread (and the chat widget) stays responsive.
+    if (LITE) { loadQueue.push({ iframe: iframe, url: url }); pumpQueue(); }
+    else iframe.src = url;
 
     var loaded = false;
     iframe.addEventListener('load', function () {
@@ -681,8 +722,8 @@ function scrambleWord(el, word) {
     // Hover controls: interact with the embedded site, or open it for real.
     var bar = document.createElement('div');
     bar.style.cssText = 'position:absolute;right:12px;bottom:12px;z-index:4;display:flex;gap:8px;opacity:0;transition:opacity 0.25s ease;';
-    var interact = controlBtn('Interact ▸');
-    var open = controlLink(url, 'Open ↗');
+    var interact = controlBtn('Interact');
+    var open = controlLink(url, 'Open');
     bar.appendChild(interact);
     bar.appendChild(open);
     el.appendChild(bar);
@@ -692,7 +733,7 @@ function scrambleWord(el, word) {
     interact.addEventListener('click', function () {
       on = !on;
       iframe.style.pointerEvents = on ? 'auto' : 'none';
-      interact.textContent = on ? 'Done ✕' : 'Interact ▸';
+      interact.textContent = on ? 'Done' : 'Interact';
       interact.style.background = on ? '#141210' : '#F26522';
       interact.style.color = on ? '#FBF6EE' : '#141210';
       el.style.outline = on ? '3px solid #F26522' : 'none';
@@ -716,20 +757,7 @@ function scrambleWord(el, word) {
 
     var bar = document.createElement('div');
     bar.style.cssText = 'position:absolute;right:12px;bottom:12px;z-index:4;display:flex;gap:8px;opacity:0;transition:opacity 0.25s ease;';
-
-    // Facade pattern (lite-embed): on touch devices the screenshot stands in
-    // for the heavy cross-origin iframe, and this button mounts the real
-    // thing only on explicit tap — one iframe at a time, main thread stays free.
-    if (el.dataset.embed === '1' && LITE) {
-      var loadBtn = controlBtn('▶ Live preview');
-      loadBtn.addEventListener('click', function () {
-        if (img.parentNode) img.parentNode.removeChild(img);
-        if (bar.parentNode) bar.parentNode.removeChild(bar);
-        mountLive(el, frame);
-      });
-      bar.appendChild(loadBtn);
-    }
-    bar.appendChild(controlLink(url, 'Open ↗'));
+    bar.appendChild(controlLink(url, 'Open live site'));
     el.appendChild(bar);
 
     if (LITE) bar.style.opacity = '1';   // no hover on touch — keep controls visible
@@ -754,7 +782,7 @@ function scrambleWord(el, word) {
       if (el.dataset.mounted) return;
       el.dataset.mounted = '1';
       var frame = el.closest('[data-preview-frame]');
-      if (el.dataset.embed === '1' && !LITE) mountLive(el, frame);
+      if (el.dataset.embed === '1') mountLive(el, frame);
       else mountFallback(el, frame);
     });
   }, { rootMargin: '300px' });
