@@ -12,6 +12,12 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+// Load server/.env regardless of the process working directory (pm2, systemd, etc.)
+dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env') });
 
 const PORT = Number(process.env.PORT) || 8790;
 const HOST = process.env.HOST || '127.0.0.1';
