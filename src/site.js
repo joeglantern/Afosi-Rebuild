@@ -83,32 +83,32 @@ function mobileMenuHTML(active) {
 const BULB_ICON = `<svg width="19" height="19" viewBox="0 0 64 64" fill="none" stroke="currentColor"><path d="M32 6C21 6 13 14 13 24c0 6.5 3.6 10.4 6.4 13.6 1.7 2 3.1 3.6 3.1 6.4h19c0-2.8 1.4-4.4 3.1-6.4C47.4 34.4 51 30.5 51 24 51 14 43 6 32 6z" stroke-width="5" stroke-linejoin="round"/><path d="M26 44c-1-7-4-9-4-13a10 10 0 0 1 20 0c0 4-3 6-4 13" stroke="#F26522" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 50h14M28 55h8" stroke-width="5" stroke-linecap="round"/></svg>`;
 
 const CHAT_HTML = `
-  <div style="position:fixed;right:24px;bottom:24px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:'Manrope',system-ui,sans-serif;">
-    <div id="af-chat-panel" style="display:none;width:384px;max-width:calc(100vw - 48px);height:min(560px, calc(100vh - 140px));background:#FBF6EE;border:2px solid #17150F;box-shadow:8px 8px 0 #17150F;flex-direction:column;overflow:hidden;">
-      <div style="padding:16px 18px;background:#17150F;display:flex;align-items:center;gap:13px;">
-        <div style="width:40px;height:40px;background:#F26522;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-          <svg width="22" height="22" viewBox="0 0 64 64" fill="none"><path d="M32 6C21 6 13 14 13 24c0 6.5 3.6 10.4 6.4 13.6 1.7 2 3.1 3.6 3.1 6.4h19c0-2.8 1.4-4.4 3.1-6.4C47.4 34.4 51 30.5 51 24 51 14 43 6 32 6z" stroke="#141210" stroke-width="4" stroke-linejoin="round"/><path d="M26 44c-1-7-4-9-4-13a10 10 0 0 1 20 0c0 4-3 6-4 13" stroke="#141210" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 50h14M28 55h8" stroke="#141210" stroke-width="4" stroke-linecap="round"/></svg>
+  <div style="position:fixed;right:24px;bottom:24px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:'Space Mono',monospace;">
+    <div id="af-chat-panel" style="display:none;width:404px;max-width:calc(100vw - 40px);height:min(582px, calc(100vh - 130px));background:#141210;border:2px solid #17150F;box-shadow:8px 8px 0 #F26522;flex-direction:column;overflow:hidden;">
+      <div style="padding:12px 14px;background:#0F0D0B;border-bottom:1px solid #35302E;display:flex;align-items:center;gap:11px;flex-shrink:0;">
+        <div style="display:flex;gap:6px;">
+          <span style="width:11px;height:11px;background:#F26522;border:1px solid #000;"></span>
+          <span style="width:11px;height:11px;background:#C9922E;border:1px solid #000;"></span>
+          <span style="width:11px;height:11px;background:#2E7D32;border:1px solid #000;"></span>
         </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;color:#FBF6EE;">AFOSI Assistant</div>
-          <div style="display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:#948D82;margin-top:2px;"><span style="width:7px;height:7px;background:#4CAF50;display:inline-block;"></span>Online now</div>
-        </div>
-        <div id="af-chat-close" class="hov-chatclose" style="cursor:pointer;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#948D82;border:1px solid #35302E;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+        <div style="flex:1;text-align:center;font-size:12px;letter-spacing:0.06em;color:#8A8175;">afosi://assistant</div>
+        <div id="af-chat-close" class="hov-chatclose" style="cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#8A8175;font-size:14px;">✕</div>
       </div>
-      <div id="af-chat-body" style="flex:1;overflow-y:auto;padding:20px 18px;display:flex;flex-direction:column;gap:12px;background-image:radial-gradient(rgba(23,21,15,0.06) 1.2px,transparent 1.5px);background-size:22px 22px;"></div>
-      <div style="padding:12px 16px 4px;display:flex;gap:8px;flex-wrap:wrap;">
-        <div class="hov-prompt af-chat-prompt" data-msg="Tell me about your programs" style="cursor:pointer;background:#FFFFFF;border:1.5px solid #17150F;color:#17150F;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;padding:7px 12px;white-space:nowrap;">Our programs</div>
-        <div class="hov-prompt af-chat-prompt" data-msg="How can I partner with AFOSI?" style="cursor:pointer;background:#FFFFFF;border:1.5px solid #17150F;color:#17150F;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;padding:7px 12px;white-space:nowrap;">Partner with us</div>
-        <div class="hov-prompt af-chat-prompt" data-msg="How do I volunteer?" style="cursor:pointer;background:#FFFFFF;border:1.5px solid #17150F;color:#17150F;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;padding:7px 12px;white-space:nowrap;">Volunteer</div>
+      <div id="af-chat-body" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:13px;font-size:13px;line-height:1.6;color:#E8E2D6;background-image:linear-gradient(rgba(242,101,34,0.03) 1px,transparent 1px);background-size:100% 3px;"></div>
+      <div style="padding:0 14px 9px;display:flex;gap:7px;flex-wrap:wrap;flex-shrink:0;">
+        <div class="hov-prompt af-chat-prompt" data-msg="Tell me about your programs" style="cursor:pointer;background:#221F19;border:1px solid #3A342E;color:#C9C2B6;font-size:11px;padding:6px 10px;">./programs</div>
+        <div class="hov-prompt af-chat-prompt" data-msg="What opportunities are open right now?" style="cursor:pointer;background:#221F19;border:1px solid #3A342E;color:#C9C2B6;font-size:11px;padding:6px 10px;">./opportunities</div>
+        <div class="hov-prompt af-chat-prompt" data-msg="How can I partner with or support AFOSI?" style="cursor:pointer;background:#221F19;border:1px solid #3A342E;color:#C9C2B6;font-size:11px;padding:6px 10px;">./partner</div>
       </div>
-      <div style="margin:12px 16px 16px;display:flex;background:#FFFFFF;border:2px solid #17150F;">
-        <input id="af-chat-input" placeholder="Ask anything about AFOSI..." style="flex:1;background:transparent;border:none;color:#17150F;padding:13px 15px;font-family:'Manrope',sans-serif;font-size:14px;outline:none;min-width:0;">
-        <div id="af-chat-send" class="hov-send" style="cursor:pointer;width:48px;background:#F26522;display:flex;align-items:center;justify-content:center;flex-shrink:0;border-left:2px solid #17150F;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#141210" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div>
+      <div style="margin:0 14px 14px;display:flex;align-items:center;gap:9px;background:#0F0D0B;border:1.5px solid #3A342E;padding:11px 13px;flex-shrink:0;">
+        <span style="color:#F26522;font-size:13px;white-space:nowrap;">afosi:~$</span>
+        <input id="af-chat-input" placeholder="type a question..." autocomplete="off" style="flex:1;background:transparent;border:none;color:#E8E2D6;font-family:'Space Mono',monospace;font-size:13px;outline:none;min-width:0;">
+        <div id="af-chat-send" class="hov-send" style="cursor:pointer;color:#F26522;font-size:16px;line-height:1;">↵</div>
       </div>
     </div>
-    <div id="af-chat-toggle" class="hov-launch" style="cursor:pointer;display:flex;align-items:center;gap:11px;background:#17150F;color:#FBF6EE;padding:15px 22px;border:2px solid #17150F;box-shadow:5px 5px 0 #F26522;">
-      ${BULB_ICON}
-      <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.02em;">Ask AFOSI</span>
+    <div id="af-chat-toggle" class="hov-launch" style="cursor:pointer;display:flex;align-items:center;gap:10px;background:#141210;color:#FBF6EE;padding:14px 20px;border:2px solid #17150F;box-shadow:5px 5px 0 #F26522;font-family:'Space Mono',monospace;">
+      <span style="color:#F26522;font-weight:700;font-size:15px;">&gt;_</span>
+      <span style="font-weight:700;font-size:13.5px;letter-spacing:0.04em;">Ask AFOSI</span>
     </div>
   </div>`;
 
@@ -471,55 +471,107 @@ function scrambleWord(el, word) {
   var sendBtn = document.getElementById('af-chat-send');
   if (!panel || !toggle) return;
 
+  // Chat service endpoint (server holds the OpenAI key — never the browser).
+  var CHAT_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_CHAT_URL) || 'https://api.afosi.org/chat';
+
+  var history = [];        // {role:'user'|'assistant', content} — sent to the backend for context
+  var busy = false;
+  var blink = 'display:inline-block;width:8px;height:14px;background:#F26522;margin-left:2px;vertical-align:middle;animation:mgBlink 1.1s steps(1) infinite;';
+
   function scrollChat() { body.scrollTop = body.scrollHeight; }
 
-  function addMsg(msg) {
+  // User line: a terminal command echo.  Bot line: assistant output.
+  function userLine(text) {
     var div = document.createElement('div');
-    if (msg.bot) {
-      div.style.cssText = 'align-self:flex-start;max-width:85%;background:#FFFFFF;border:1.5px solid #17150F;color:#17150F;padding:12px 15px;font-size:13.5px;line-height:1.55;box-shadow:3px 3px 0 rgba(23,21,15,0.12);';
-    } else {
-      div.style.cssText = 'align-self:flex-end;max-width:85%;background:#F26522;color:#141210;padding:12px 15px;font-size:13.5px;line-height:1.55;font-weight:600;box-shadow:3px 3px 0 rgba(23,21,15,0.18);';
+    div.style.cssText = 'align-self:stretch;color:#F5B98F;word-break:break-word;';
+    var p = document.createElement('span'); p.style.cssText = 'color:#F26522;'; p.textContent = 'you@afosi:~$ ';
+    var t = document.createElement('span'); t.textContent = text;
+    div.appendChild(p); div.appendChild(t);
+    body.appendChild(div); scrollChat();
+  }
+
+  function botShell() {
+    var div = document.createElement('div');
+    div.style.cssText = 'align-self:stretch;color:#E8E2D6;word-break:break-word;white-space:pre-wrap;';
+    var tag = document.createElement('span'); tag.style.cssText = 'color:#2E7D32;'; tag.textContent = 'afosi> ';
+    var span = document.createElement('span');
+    var cur = document.createElement('span'); cur.style.cssText = blink;
+    div.appendChild(tag); div.appendChild(span); div.appendChild(cur);
+    body.appendChild(div); scrollChat();
+    return { span: span, cursor: cur, wrap: div };
+  }
+
+  // Char-by-char typewriter reveal with a blinking block cursor.
+  function typewrite(shell, text) {
+    return new Promise(function (resolve) {
+      var i = 0;
+      var speed = text.length > 320 ? 8 : 16;   // faster for long answers
+      (function step() {
+        if (i >= text.length) { if (shell.cursor.parentNode) shell.cursor.parentNode.removeChild(shell.cursor); resolve(); return; }
+        var chunk = text.length > 320 ? 3 : 1;
+        shell.span.textContent += text.slice(i, i + chunk);
+        i += chunk;
+        scrollChat();
+        setTimeout(step, speed);
+      })();
+    });
+  }
+
+  async function fetchReply() {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 30000);
+    try {
+      var res = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history.slice(-12) }),   // cap context sent
+        signal: ctrl.signal
+      });
+      var data = null;
+      try { data = await res.json(); } catch (e) { data = null; }
+      if (!res.ok || !data) throw new Error((data && data.message) || ('chat ' + res.status));
+      return String(data.reply || '').trim() || 'Sorry, I could not generate a reply just now.';
+    } finally {
+      clearTimeout(timer);
     }
-    div.textContent = msg.text;
-    body.appendChild(div);
-    scrollChat();
   }
 
-  addMsg({ bot: true, text: "Habari! I'm the AFOSI assistant. Ask me about our programs, partnerships or how to get involved." });
-
-  async function getAIReply(userText) {
-    // ============================================================
-    // WIRE YOUR OPENAI API KEY HERE. Replace the canned logic below:
-    // const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json", "Authorization": "Bearer YOUR_API_KEY" },
-    //   body: JSON.stringify({ model: "gpt-4o-mini", messages: [
-    //     { role: "system", content: "You are the helpful assistant of AFOSI (Action for Sustainability Initiative), a tech-driven NGO in Nairobi, Kenya." },
-    //     { role: "user", content: userText } ] })
-    // });
-    // const data = await res.json();
-    // return data.choices[0].message.content;
-    // ============================================================
-    await new Promise(function (r) { setTimeout(r, 700); });
-    var t = userText.toLowerCase();
-    if (t.includes('program')) return 'We run programs across six pillars: Health, Education, Environment, Livelihoods, Leadership and Humanitarian support. Flagships include the We Lead Project and Robotics and Creative Coding.';
-    if (t.includes('partner') || t.includes('fund')) return 'We would love to work with you. You can fund a program, collaborate on delivery, or volunteer your skills. Email info@afosi.org and our team will get back to you.';
-    if (t.includes('volunteer') || t.includes('join')) return 'Great! We are always looking for mentors, engineers and facilitators. Reach out at info@afosi.org with your skills and availability.';
-    return 'Thanks for your message! I will be connected to a live AI soon. For now, reach us at info@afosi.org or (+254) 0115 963 306.';
-  }
-
-  function send(textArg) {
+  async function send(textArg) {
+    if (busy) return;
     var text = String(textArg || input.value).trim();
     if (!text) return;
-    addMsg({ user: true, text: text });
+    if (text.length > 800) text = text.slice(0, 800);
+    busy = true;
     input.value = '';
-    getAIReply(text).then(function (reply) { addMsg({ bot: true, text: reply }); });
+    userLine(text);
+    history.push({ role: 'user', content: text });
+
+    var shell = botShell();               // shows a lone blinking cursor while thinking
+    try {
+      var reply = await fetchReply();
+      await typewrite(shell, reply);
+      history.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      if (shell.cursor.parentNode) shell.cursor.parentNode.removeChild(shell.cursor);
+      shell.span.style.color = '#E0A090';
+      shell.span.textContent = "connection to the assistant is unavailable right now. reach us at info@afosi.org or (+254) 0115 963 306.";
+      scrollChat();
+    } finally {
+      busy = false;
+      input.focus();
+    }
   }
+
+  // Greeting typed out on first render.
+  (function greet() {
+    var shell = botShell();
+    typewrite(shell, "Habari. I'm the AFOSI assistant — ask me anything about our programs, opportunities, platforms or how to get involved.");
+  })();
 
   toggle.addEventListener('click', function () {
     var open = panel.style.display !== 'none';
     panel.style.display = open ? 'none' : 'flex';
-    if (!open) scrollChat();
+    if (!open) { scrollChat(); input.focus(); }
   });
   closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
   sendBtn.addEventListener('click', function () { send(); });

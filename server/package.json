@@ -1,0 +1,17 @@
+{
+  "name": "afosi-chat-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated chat backend for the AFOSI website assistant. Holds the OpenAI key server-side, moderates + rate-limits user input, and answers with live AFOSI knowledge.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.1",
+    "openai": "^4.67.3"
+  }
+}
