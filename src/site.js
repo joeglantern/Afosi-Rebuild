@@ -568,12 +568,17 @@ function scrambleWord(el, word) {
     typewrite(shell, "Habari. I'm the AFOSI assistant — ask me anything about our programs, opportunities, platforms or how to get involved.");
   })();
 
+  var isPhone = function () { return window.matchMedia('(max-width: 640px)').matches; };
+  function setOpen(open) {
+    panel.style.display = open ? 'flex' : 'none';
+    // Full-screen overlay on phones — freeze the page behind it.
+    document.body.style.overflow = open && isPhone() ? 'hidden' : '';
+    if (open) { scrollChat(); if (!isPhone()) input.focus(); }
+  }
   toggle.addEventListener('click', function () {
-    var open = panel.style.display !== 'none';
-    panel.style.display = open ? 'none' : 'flex';
-    if (!open) { scrollChat(); input.focus(); }
+    setOpen(panel.style.display === 'none');
   });
-  closeBtn.addEventListener('click', function () { panel.style.display = 'none'; });
+  closeBtn.addEventListener('click', function () { setOpen(false); });
   sendBtn.addEventListener('click', function () { send(); });
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
   document.querySelectorAll('.af-chat-prompt').forEach(function (p) {
@@ -681,6 +686,7 @@ function scrambleWord(el, word) {
     bar.appendChild(interact);
     bar.appendChild(open);
     el.appendChild(bar);
+    if (LITE) bar.style.opacity = '1';   // touch devices: no hover, keep controls visible
 
     var on = false;
     interact.addEventListener('click', function () {
@@ -710,8 +716,23 @@ function scrambleWord(el, word) {
 
     var bar = document.createElement('div');
     bar.style.cssText = 'position:absolute;right:12px;bottom:12px;z-index:4;display:flex;gap:8px;opacity:0;transition:opacity 0.25s ease;';
-    bar.appendChild(controlLink(url, 'Open live site ↗'));
+
+    // Facade pattern (lite-embed): on touch devices the screenshot stands in
+    // for the heavy cross-origin iframe, and this button mounts the real
+    // thing only on explicit tap — one iframe at a time, main thread stays free.
+    if (el.dataset.embed === '1' && LITE) {
+      var loadBtn = controlBtn('▶ Live preview');
+      loadBtn.addEventListener('click', function () {
+        if (img.parentNode) img.parentNode.removeChild(img);
+        if (bar.parentNode) bar.parentNode.removeChild(bar);
+        mountLive(el, frame);
+      });
+      bar.appendChild(loadBtn);
+    }
+    bar.appendChild(controlLink(url, 'Open ↗'));
     el.appendChild(bar);
+
+    if (LITE) bar.style.opacity = '1';   // no hover on touch — keep controls visible
 
     el.addEventListener('mouseenter', function () {
       img.style.objectPosition = 'center bottom';
@@ -721,7 +742,7 @@ function scrambleWord(el, word) {
     el.addEventListener('mouseleave', function () {
       img.style.objectPosition = 'center top';
       img.style.transform = 'scale(1)';
-      bar.style.opacity = '0';
+      if (!LITE) bar.style.opacity = '0';
     });
   }
 

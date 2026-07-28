@@ -140,12 +140,26 @@ a:hover { color: #F26522; }
   [style*="grid-template-rows:198px 198px"] { grid-template-rows: 150px 150px !important; }
 }
 
-/* Chatbot: near-full-screen on phones so the terminal is comfortable to use */
-@media (max-width: 480px) {
-  #af-chat-dock { right: 12px !important; bottom: 12px !important; }
+/* Chatbot on phones: full-screen fixed overlay. Anchoring the panel inside the
+   floating dock breaks when the mobile URL bar collapses/expands, so on small
+   screens the panel takes the whole viewport above everything else. */
+@media (max-width: 640px) {
+  #af-chat-dock { right: 14px !important; bottom: 14px !important; z-index: 140 !important; }
+  #af-chat-toggle { touch-action: manipulation; }
   #af-chat-panel {
-    width: calc(100vw - 24px) !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
     max-width: none !important;
-    height: calc(100svh - 88px) !important;
+    height: 100% !important;
+    height: 100dvh !important;   /* tracks the real visible viewport as the URL bar moves */
+    border: none !important;
+    box-shadow: none !important;
+    z-index: 150 !important;
   }
+  /* 16px stops iOS Safari from auto-zooming the page when the input is focused
+     (the classic "chat looks broken on my phone" bug). */
+  #af-chat-input { font-size: 16px !important; }
+  #af-chat-body { -webkit-overflow-scrolling: touch; }
+  #af-chat-close { width: 38px !important; height: 38px !important; font-size: 18px !important; }
 }
