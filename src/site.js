@@ -591,6 +591,10 @@ function scrambleWord(el, word) {
   var els = document.querySelectorAll('[data-live-preview]');
   if (!els.length) return;
   var VIEW_W = 1280; // desktop viewport the embedded site renders at
+  // On phones/tablets, skip the heavy cross-origin iframes: they render at
+  // 1280px (overflowing to the right) and three loading at once freeze the
+  // main thread — which locks up the chat widget. Use the screenshot instead.
+  var LITE = window.matchMedia('(max-width: 900px)').matches || window.matchMedia('(pointer: coarse)').matches;
 
   function status(frame, text, color) {
     var s = frame ? frame.querySelector('[data-preview-status]') : null;
@@ -729,7 +733,7 @@ function scrambleWord(el, word) {
       if (el.dataset.mounted) return;
       el.dataset.mounted = '1';
       var frame = el.closest('[data-preview-frame]');
-      if (el.dataset.embed === '1') mountLive(el, frame);
+      if (el.dataset.embed === '1' && !LITE) mountLive(el, frame);
       else mountFallback(el, frame);
     });
   }, { rootMargin: '300px' });
