@@ -83,7 +83,7 @@ function mobileMenuHTML(active) {
 const BULB_ICON = `<svg width="19" height="19" viewBox="0 0 64 64" fill="none" stroke="currentColor"><path d="M32 6C21 6 13 14 13 24c0 6.5 3.6 10.4 6.4 13.6 1.7 2 3.1 3.6 3.1 6.4h19c0-2.8 1.4-4.4 3.1-6.4C47.4 34.4 51 30.5 51 24 51 14 43 6 32 6z" stroke-width="5" stroke-linejoin="round"/><path d="M26 44c-1-7-4-9-4-13a10 10 0 0 1 20 0c0 4-3 6-4 13" stroke="#F26522" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 50h14M28 55h8" stroke-width="5" stroke-linecap="round"/></svg>`;
 
 const CHAT_HTML = `
-  <div style="position:fixed;right:24px;bottom:24px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:'Space Mono',monospace;">
+  <div id="af-chat-dock" style="position:fixed;right:24px;bottom:24px;z-index:90;display:flex;flex-direction:column;align-items:flex-end;gap:16px;font-family:'Space Mono',monospace;">
     <div id="af-chat-panel" style="display:none;width:404px;max-width:calc(100vw - 40px);height:min(582px, calc(100vh - 130px));background:#141210;border:2px solid #17150F;box-shadow:8px 8px 0 #F26522;flex-direction:column;overflow:hidden;">
       <div style="padding:12px 14px;background:#0F0D0B;border-bottom:1px solid #35302E;display:flex;align-items:center;gap:11px;flex-shrink:0;">
         <div style="display:flex;gap:6px;">

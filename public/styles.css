@@ -105,3 +105,47 @@ a:hover { color: #F26522; }
   [style*="font-size:clamp(46px"] { font-size: clamp(36px, 12vw, 46px) !important; }
   [style*="font-size:clamp(44px"] { font-size: clamp(36px, 12vw, 44px) !important; }
 }
+
+/* ==========================================================================
+   Homepage mobile polish — code editor, platform previews, hero collage
+   ========================================================================== */
+@media (max-width: 980px) {
+  /* "How we build" code section stacks (1fr 1.1fr -> 1fr). The sticky pane
+     centres its content; once stacked it's taller than the viewport, so
+     centring clips the heading. Top-align it and tighten the column gap. */
+  #af-codetrack > div { align-items: flex-start !important; }
+  #af-codetrack [style*="gap:70px"] {
+    gap: 26px !important;
+    padding-top: 6vh !important;
+    padding-bottom: 6vh !important;
+  }
+}
+@media (max-width: 680px) {
+  /* Shrink the code editor so its no-wrap lines fit a phone; allow a scroll
+     fallback for the longest lines, and drop the decorative offset square. */
+  #af-codewrap { box-shadow: 6px 6px 0 #17150F !important; }
+  #af-codewrap [style*="overflow-x:hidden"] {
+    padding: 14px 12px !important;
+    font-size: 10.5px !important;
+    line-height: 1.85 !important;
+    overflow-x: auto !important;
+  }
+  #af-codewrap [data-g] { width: 15px !important; }
+  #af-codetrack [style*="width:110px;height:110px"] { display: none !important; }
+
+  /* Digital-tools platform cards: tighten padding on phones */
+  [style*="background:#1C1915"][style*="padding:32px"] { padding: 22px !important; }
+
+  /* Hero image collage: shorter rows so it isn't a tall block once stacked */
+  [style*="grid-template-rows:198px 198px"] { grid-template-rows: 150px 150px !important; }
+}
+
+/* Chatbot: near-full-screen on phones so the terminal is comfortable to use */
+@media (max-width: 480px) {
+  #af-chat-dock { right: 12px !important; bottom: 12px !important; }
+  #af-chat-panel {
+    width: calc(100vw - 24px) !important;
+    max-width: none !important;
+    height: calc(100svh - 88px) !important;
+  }
+}
