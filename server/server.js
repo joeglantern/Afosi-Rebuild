@@ -69,7 +69,7 @@ DIGITAL PLATFORMS
 TEAM
 - Board of Directors: Eva Nchogu (Board Chairperson), Winnie Osoro (Board Treasurer), Lucy Mogesi (Board Member), Anne Nderitu (Board Member).
 - Management: Eric Nyamwaro (Executive Director), Esther Mwikali (National Coordinator).
-- Core team includes: Prisca Achieng, Davin Omollo, Ivy Awuor, Felix Omondi, Magdaline Watahi, Barbra Wanjiku, Vanessa Wambui, Fredrick Ongaki, Elisha Papa, Virginia Kerubo, Joe Liban (Software Engineer), Peter Onsomu, Elizabeth Muthoni, Titus.
+- Core team includes: Prisca Achieng, Davin Omollo, Ivy Awuor, Felix Omondi, Magdaline Watahi, Vanessa Wambui, Fredrick Ongaki, Elisha Papa, Virginia Kerubo, Joe Liban (Software Engineer), Peter Onsomu, Elizabeth Muthoni, Titus.
 
 PARTNERS
 We Lead, Udada Imara, SYO, RAI, PYWV, NYECBO, Inuka, GEM Trust, Dayo, CSA.
