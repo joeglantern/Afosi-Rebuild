@@ -81,6 +81,10 @@ async function submitOrder(opts) {
     description: opts.description,
     callback_url: opts.callbackUrl,
     cancellation_url: opts.cancellationUrl,
+    // Checkout is embedded in an iframe on our own donate page — this tells
+    // Pesapal's page to navigate the embedding (parent) page to callback_url
+    // once payment finishes, instead of trying to redirect inside the frame.
+    redirect_mode: 'PARENT_WINDOW',
     notification_id,
     billing_address: opts.billing,
   };
