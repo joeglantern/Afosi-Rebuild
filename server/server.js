@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import * as pesapal from './pesapal.js';
+import { handleImgRequest } from './imgproxy.js';
 
 // Load server/.env regardless of the process working directory (pm2, systemd, etc.)
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -209,6 +210,19 @@ app.use(
     methods: ['GET', 'POST', 'OPTIONS'],
   })
 );
+
+// ---------------------------------------------------------------------------
+// Image proxy — resizes/recompresses Supabase-hosted gallery & news photos on
+// the way through (some are uploaded at 10-20MB) and caches the result to
+// disk, so the slow part only ever happens once per image/width.
+// ---------------------------------------------------------------------------
+const imgLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120, // generous — a single gallery page load fires several of these
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.get('/img', imgLimiter, handleImgRequest);
 
 const chatLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,

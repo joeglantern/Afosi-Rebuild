@@ -199,3 +199,15 @@ a:hover { color: #F26522; }
 @media (prefers-reduced-motion: reduce) {
   #donate-modal, #donate-modal-card, .af-spin, .af-check-draw, .af-icon-pop, .af-shake, .af-chip-pop { animation-duration: 0.001s !important; }
 }
+
+/* Loading skeletons for CMS-driven grids (gallery/news) — shown until the
+   API response replaces the grid's innerHTML, so a slow fetch doesn't look
+   like a blank/broken page. */
+@keyframes af-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.af-skeleton {
+  background: linear-gradient(90deg, #EDE7D9 25%, #F5F0E5 37%, #EDE7D9 63%);
+  background-size: 200% 100%;
+  animation: af-shimmer 1.6s ease-in-out infinite;
+  border: 2px solid rgba(23,21,15,0.1);
+}
+@media (prefers-reduced-motion: reduce) { .af-skeleton { animation: none; } }

@@ -11,6 +11,21 @@ const esc = (s) =>
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+// Gallery/news photos come straight from Supabase Storage at their original
+// upload size (some are 10-20MB) — route them through our own resize/cache
+// proxy instead of loading the original. Falls through to the raw url for
+// anything not hosted on Supabase, so nothing silently breaks if that changes.
+const IMG_PROXY_BASE = (import.meta.env && import.meta.env.VITE_API_ROOT) || 'https://api.afosi.org';
+function imgProxy(url, width) {
+  if (!url) return url;
+  try {
+    if (!/\.supabase\.co$/i.test(new URL(url).hostname)) return url;
+  } catch {
+    return url;
+  }
+  return `${IMG_PROXY_BASE}/img?url=${encodeURIComponent(url)}&w=${width}`;
+}
+
 function fmtDate(value) {
   if (!value) return '';
   const d = new Date(value);
@@ -116,7 +131,7 @@ function newsCard(item) {
   const link = item.pdf_url || '';
   const media = item.image_url
     ? `<div style="height:150px;position:relative;overflow:hidden;border-bottom:2px solid #17150F;">
-         <img src="${esc(item.image_url)}" alt="${esc(item.title)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;">
+         <img src="${esc(imgProxy(item.image_url, 500))}" alt="${esc(item.title)}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
          <span style="position:absolute;top:12px;left:12px;background:${accent};color:#141210;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:5px 9px;letter-spacing:0.08em;text-transform:uppercase;">${esc(bucket)}</span>
        </div>`
     : `<div style="height:150px;background:#141210;position:relative;overflow:hidden;border-bottom:2px solid #17150F;display:flex;align-items:center;justify-content:center;">
@@ -172,8 +187,8 @@ function galleryItem(item, i) {
   const span = i % 3 === 0;
   const minH = span ? 420 : 230;
   return (
-    `<div data-reveal data-cat="${esc(cat)}" data-lightbox="${esc(url)}" style="position:relative;cursor:zoom-in;overflow:hidden;border:2px solid #17150F;${span ? 'grid-row:span 2;' : ''}break-inside:avoid;">
-       <img src="${esc(url)}" alt="${esc(label)}" loading="lazy" style="display:block;width:100%;height:100%;min-height:${minH}px;object-fit:cover;transition:transform 0.5s ease;">
+    `<div data-reveal data-cat="${esc(cat)}" data-lightbox="${esc(imgProxy(url, 1400))}" style="position:relative;cursor:zoom-in;overflow:hidden;border:2px solid #17150F;${span ? 'grid-row:span 2;' : ''}break-inside:avoid;">
+       <img src="${esc(imgProxy(url, 500))}" alt="${esc(label)}" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;min-height:${minH}px;object-fit:cover;transition:transform 0.5s ease;">
        <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:16px;background:linear-gradient(to top,rgba(20,18,16,0.75),transparent 55%);opacity:0;transition:opacity 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#F26522;padding:5px 10px;color:#141210;">${esc(cat)}</span></div>
      </div>`
   );

@@ -89,3 +89,28 @@ the browser only ever receives a Pesapal-hosted `redirect_url`.
 Donations are appended to `server/donations.log` (gitignored, JSON lines) as a
 simple audit trail — Pesapal's own dashboard remains the source of truth for
 actual settlement.
+
+## Image proxy (gallery/news photos)
+
+Gallery and news photos are uploaded through the AFOSI admin dashboard
+straight to Supabase Storage at their original size (some 10-20MB+). We don't
+control that backend, so `server/imgproxy.js` fetches the original once,
+resizes + recompresses it to WebP with `sharp`, and caches the result to
+`server/img-cache/` (gitignored) — every request after the first for a given
+image/width is served straight from disk.
+
+Route: `GET /img?url=<supabase-image-url>&w=<width>`. Add the nginx route on
+`api.afosi.org` (same server block as `/chat`/`/donate`):
+```nginx
+location /img {
+    proxy_pass http://127.0.0.1:8790;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+then `sudo nginx -t && sudo systemctl reload nginx`.
+
+`IMG_ALLOWED_HOSTS` in `.env` restricts which hostnames it will fetch from —
+only needs changing if AFOSI moves to a different Supabase project.
