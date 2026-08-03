@@ -7,18 +7,25 @@
 // callback_url AND calls the IPN url server-to-server, both carrying
 // OrderTrackingId/OrderMerchantReference only (never the payment status,
 // by design) -> we call GetTransactionStatus to find out what happened.
+//
+// process.env is read lazily inside these functions (never cached into
+// module-level consts at import time) — dotenv.config() in server.js runs
+// after this module's static import is evaluated, so anything read at the
+// top level here would see an empty environment.
 
-const PESAPAL_ENV = (process.env.PESAPAL_ENV || 'sandbox').toLowerCase();
-const BASE = PESAPAL_ENV === 'live' ? 'https://pay.pesapal.com/v3' : 'https://cybqa.pesapal.com/pesapalv3';
+function getEnv() {
+  return (process.env.PESAPAL_ENV || 'sandbox').toLowerCase();
+}
+function getBase() {
+  return getEnv() === 'live' ? 'https://pay.pesapal.com/v3' : 'https://cybqa.pesapal.com/pesapalv3';
+}
 
-const CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
-const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-
-let ipnId = process.env.PESAPAL_IPN_ID || null;
+let ipnId = null;
+let ipnIdInitialized = false;
 let tokenCache = { token: null, exp: 0 };
 
 function configured() {
-  return Boolean(CONSUMER_KEY && CONSUMER_SECRET);
+  return Boolean(process.env.PESAPAL_CONSUMER_KEY && process.env.PESAPAL_CONSUMER_SECRET);
 }
 
 async function postJSON(url, body, token) {
@@ -35,9 +42,9 @@ async function postJSON(url, body, token) {
 async function getToken() {
   if (!configured()) throw new Error('Pesapal is not configured (missing consumer key/secret).');
   if (tokenCache.token && Date.now() < tokenCache.exp) return tokenCache.token;
-  const json = await postJSON(`${BASE}/api/Auth/RequestToken`, {
-    consumer_key: CONSUMER_KEY,
-    consumer_secret: CONSUMER_SECRET,
+  const json = await postJSON(`${getBase()}/api/Auth/RequestToken`, {
+    consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+    consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
   });
   if (!json.token) throw new Error('Pesapal auth did not return a token.');
   // Token is valid 5 minutes; refresh a minute early to be safe.
@@ -46,10 +53,14 @@ async function getToken() {
 }
 
 async function ensureIpnId(ipnUrl) {
+  if (!ipnIdInitialized) {
+    ipnId = process.env.PESAPAL_IPN_ID || null;
+    ipnIdInitialized = true;
+  }
   if (ipnId) return ipnId;
   const token = await getToken();
   const json = await postJSON(
-    `${BASE}/api/URLSetup/RegisterIPN`,
+    `${getBase()}/api/URLSetup/RegisterIPN`,
     { url: ipnUrl, ipn_notification_type: 'GET' },
     token
   );
@@ -77,14 +88,14 @@ async function submitOrder(opts) {
     body.account_number = opts.reference;
     body.subscription_details = opts.subscription;
   }
-  const json = await postJSON(`${BASE}/api/Transactions/SubmitOrderRequest`, body, token);
+  const json = await postJSON(`${getBase()}/api/Transactions/SubmitOrderRequest`, body, token);
   if (!json.redirect_url) throw new Error('Pesapal did not return a payment redirect url.');
   return json; // { order_tracking_id, merchant_reference, redirect_url }
 }
 
 async function getStatus(orderTrackingId) {
   const token = await getToken();
-  const r = await fetch(`${BASE}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(orderTrackingId)}`, {
+  const r = await fetch(`${getBase()}/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(orderTrackingId)}`, {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
   });
   const json = await r.json().catch(() => ({}));
@@ -92,4 +103,4 @@ async function getStatus(orderTrackingId) {
   return json;
 }
 
-export { configured, submitOrder, getStatus, PESAPAL_ENV };
+export { configured, submitOrder, getStatus, getEnv as getPesapalEnv };

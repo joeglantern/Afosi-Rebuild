@@ -294,7 +294,7 @@ const donateLimiter = rateLimit({
   handler: (req, res) => res.status(429).json({ message: 'Too many attempts. Please wait a few minutes and try again.' }),
 });
 
-app.get('/donate/health', (req, res) => res.json({ ok: true, configured: pesapal.configured(), env: pesapal.PESAPAL_ENV }));
+app.get('/donate/health', (req, res) => res.json({ ok: true, configured: pesapal.configured(), env: pesapal.getPesapalEnv() }));
 
 app.post('/donate/initiate', donateLimiter, async (req, res) => {
   try {
@@ -404,5 +404,5 @@ app.get('/donate/ipn', async (req, res) => {
 
 app.listen(PORT, HOST, () => {
   console.log(`afosi-chat listening on http://${HOST}:${PORT} (model: ${MODEL})`);
-  console.log(`donations: ${pesapal.configured() ? `enabled (${pesapal.PESAPAL_ENV})` : 'disabled — set PESAPAL_CONSUMER_KEY/SECRET in server/.env'}`);
+  console.log(`donations: ${pesapal.configured() ? `enabled (${pesapal.getPesapalEnv()})` : 'disabled — set PESAPAL_CONSUMER_KEY/SECRET in server/.env'}`);
 });
