@@ -18,6 +18,7 @@ export default defineConfig({
         apply: resolve(__dirname, 'apply.html'),
         contact: resolve(__dirname, 'contact.html'),
         partners: resolve(__dirname, 'partners.html'),
+        donate: resolve(__dirname, 'donate.html'),
       },
     },
   },

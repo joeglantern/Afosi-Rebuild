@@ -64,6 +64,8 @@ a:hover { color: #F26522; }
 }
 @media (max-width: 680px) {
   .af-nav-cta { display: none !important; }
+  .af-nav-donate { padding: 9px 13px !important; font-size: 0 !important; }
+  .af-nav-donate svg { width: 17px !important; height: 17px !important; }
 }
 @media (max-width: 400px) {
   #af-mobile-menu a[style*="font-size:32px"] { font-size: 26px !important; }
@@ -98,6 +100,8 @@ a:hover { color: #F26522; }
   [style*="gap:56px"][style*="flex-wrap:wrap"] { gap: 28px !important; }
   /* Team page: keep people cards 2-up instead of a single huge column */
   [data-page="team"] [style*="repeat(4,1fr)"] { grid-template-columns: 1fr 1fr !important; }
+  /* Homepage donate band: the two 56px-padded halves are too roomy on phones */
+  [style*="box-shadow:12px 12px 0 #F26522"] > div { padding: 32px 24px !important; }
 }
 @media (max-width: 420px) {
   /* Immersive-stack headlines bottom out at 52px, which clips on ~320px screens */
@@ -165,4 +169,33 @@ a:hover { color: #F26522; }
   #af-chat-input { font-size: 16px !important; }
   #af-chat-body { -webkit-overflow-scrolling: touch; }
   #af-chat-close { width: 38px !important; height: 38px !important; font-size: 18px !important; }
+}
+
+/* Donate page: form + trust sidebar collapse to a single column, and the
+   sidebar drops its sticky offset once it's no longer sitting beside the form. */
+@media (max-width: 980px) {
+  #donate-grid { grid-template-columns: 1fr !important; }
+  #donate-grid > div[style*="position:sticky"] { position: static !important; }
+}
+@media (max-width: 680px) {
+  [style*="box-shadow:10px 10px 0 #17150F"] { padding: 26px !important; }
+}
+
+/* Donate modal + micro-interactions */
+@keyframes af-modal-in { from { opacity: 0; transform: scale(0.94) translateY(14px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes af-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes af-spin { to { transform: rotate(360deg); } }
+@keyframes af-check-draw { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+@keyframes af-check-pop { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes af-shake { 10%, 90% { transform: translateX(-1px); } 20%, 80% { transform: translateX(2px); } 30%, 50%, 70% { transform: translateX(-4px); } 40%, 60% { transform: translateX(4px); } }
+@keyframes af-chip-pop { 0% { transform: scale(1); } 45% { transform: scale(1.07); } 100% { transform: scale(1); } }
+#donate-modal { animation: af-backdrop-in 0.2s ease both; }
+#donate-modal-card { animation: af-modal-in 0.32s cubic-bezier(.2,.8,.3,1.1) both; }
+.af-spin { animation: af-spin 0.9s linear infinite; }
+.af-check-draw { stroke-dasharray: 40; animation: af-check-draw 0.5s 0.15s cubic-bezier(.3,.6,.3,1) both; }
+.af-icon-pop { animation: af-check-pop 0.45s cubic-bezier(.3,.6,.3,1) both; }
+.af-shake { animation: af-shake 0.5s; }
+.af-chip-pop { animation: af-chip-pop 0.28s ease; }
+@media (prefers-reduced-motion: reduce) {
+  #donate-modal, #donate-modal-card, .af-spin, .af-check-draw, .af-icon-pop, .af-shake, .af-chip-pop { animation-duration: 0.001s !important; }
 }

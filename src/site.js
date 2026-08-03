@@ -39,6 +39,8 @@ const LOADER_HTML = `
     </div>
   </div>`;
 
+const HEART_ICON = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.6-4.6-10.3-9.6C.4 8.5 1.7 4.9 5.3 4c2-.5 4 .3 5.2 2 .3.5.9.5 1.2 0 1.2-1.7 3.2-2.5 5.2-2 3.6.9 4.9 4.5 3.4 7.4C19.6 16.4 12 21 12 21z"/></svg>`;
+
 function headerHTML(active) {
   const links = NAV_LINKS.map(([key, label, href]) =>
     `<a href="${href}" style="color:${key === active ? '#F26522' : '#17150F'};">${label}</a>`
@@ -52,6 +54,7 @@ function headerHTML(active) {
         ${links}
       </div>
       <div style="display:flex;align-items:center;gap:14px;">
+        <a href="/donate.html" class="hov-shadow9 af-nav-donate" style="display:flex;align-items:center;gap:8px;background:#F26522;color:#141210;padding:11px 18px;font-size:14px;font-weight:700;white-space:nowrap;border:2px solid #17150F;">${HEART_ICON}Donate</a>
         <a href="/contact.html" class="hov-cta af-nav-cta" style="background:#17150F;color:#FBF6EE;padding:11px 20px;font-size:14px;font-weight:700;white-space:nowrap;">Get involved</a>
         <button id="af-burger" class="af-burger" aria-label="Open menu" style="cursor:pointer;background:transparent;border:2px solid #17150F;color:#17150F;width:46px;height:46px;display:none;align-items:center;justify-content:center;padding:0;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -76,7 +79,10 @@ function mobileMenuHTML(active) {
     <div style="display:flex;flex-direction:column;gap:14px;">
       ${links}
     </div>
-    <a href="/contact.html" style="margin-top:36px;align-self:flex-start;background:#F26522;color:#141210;padding:16px 32px;font-size:16px;font-weight:700;">Get involved</a>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:36px;">
+      <a href="/donate.html" style="display:flex;align-items:center;gap:9px;background:#F26522;color:#141210;padding:16px 30px;font-size:16px;font-weight:700;">${HEART_ICON}Donate</a>
+      <a href="/contact.html" style="background:transparent;color:#FBF6EE;border:2px solid #FBF6EE;padding:16px 30px;font-size:16px;font-weight:700;">Get involved</a>
+    </div>
   </div>`;
 }
 
@@ -131,6 +137,7 @@ const FOOTER_HTML = `
         <div>
           <h4 style="font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:#F26522;margin:0 0 20px;">Explore</h4>
           <div style="display:flex;flex-direction:column;gap:13px;font-size:15px;">
+            <a href="/donate.html" style="color:#C9C2B6;">Donate</a>
             <a href="/about.html" style="color:#C9C2B6;">About Us</a>
             <a href="/projects.html" style="color:#C9C2B6;">Projects</a>
             <a href="/team.html" style="color:#C9C2B6;">Our Team</a>

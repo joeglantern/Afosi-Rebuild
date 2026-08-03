@@ -13,11 +13,14 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import * as pesapal from './pesapal.js';
 
 // Load server/.env regardless of the process working directory (pm2, systemd, etc.)
-dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '.env') });
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, '.env') });
 
 const PORT = Number(process.env.PORT) || 8790;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -27,6 +30,10 @@ const AFOSI_API_URL = (process.env.AFOSI_API_URL || 'https://api.afosi.org/api')
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
   'https://afosi.org,https://www.afosi.org,http://localhost:5173,http://localhost:4173')
   .split(',').map((s) => s.trim()).filter(Boolean);
+const SITE_URL = (process.env.SITE_URL || 'https://afosi.org').replace(/\/$/, '');
+const API_URL = (process.env.API_URL || 'https://api.afosi.org').replace(/\/$/, '');
+const DONATE_CURRENCY = process.env.DONATE_CURRENCY || 'KES';
+const DONATE_MIN_AMOUNT = Number(process.env.DONATE_MIN_AMOUNT) || 50;
 
 if (!OPENAI_API_KEY) {
   console.error('FATAL: OPENAI_API_KEY is not set. Put it in server/.env — never in the repo.');
@@ -34,6 +41,20 @@ if (!OPENAI_API_KEY) {
 }
 
 const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+
+// ---------------------------------------------------------------------------
+// Donation log — no database in this project, so donations are appended as
+// JSON lines for the team to reconcile. Pesapal itself remains the source of
+// truth for actual settlement.
+// ---------------------------------------------------------------------------
+const DONATIONS_LOG = join(__dirname, 'donations.log');
+function logDonation(record) {
+  try {
+    fs.appendFileSync(DONATIONS_LOG, JSON.stringify({ at: new Date().toISOString(), ...record }) + '\n');
+  } catch (e) {
+    console.error('[donate] failed to write donations.log:', e.message);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Knowledge base — real, verified AFOSI facts (kept in sync with the site).
@@ -260,6 +281,128 @@ app.post('/chat', chatLimiter, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Donations — Pesapal API 3.0 (M-Pesa + card via a single hosted checkout).
+// The consumer key/secret only ever live here; the browser gets back a
+// Pesapal-hosted redirect_url and never touches credentials.
+// ---------------------------------------------------------------------------
+const donateLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 12, // 12 attempts / 10 min / IP — plenty for a real donor, tight against abuse
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ message: 'Too many attempts. Please wait a few minutes and try again.' }),
+});
+
+app.get('/donate/health', (req, res) => res.json({ ok: true, configured: pesapal.configured(), env: pesapal.PESAPAL_ENV }));
+
+app.post('/donate/initiate', donateLimiter, async (req, res) => {
+  try {
+    if (!pesapal.configured()) {
+      return res.status(503).json({ message: 'Online donations are not enabled yet. Please email info@afosi.org.' });
+    }
+    const { amount, name, email, phone, frequency } = req.body || {};
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt < DONATE_MIN_AMOUNT) {
+      return res.status(400).json({ message: `Please enter at least ${DONATE_MIN_AMOUNT} ${DONATE_CURRENCY}.` });
+    }
+    const cleanEmail = typeof email === 'string' ? email.trim().slice(0, 200) : '';
+    const cleanPhone = typeof phone === 'string' ? phone.trim().slice(0, 20) : '';
+    if (!cleanEmail && !cleanPhone) {
+      return res.status(400).json({ message: 'Please provide an email or phone number so we can send a receipt.' });
+    }
+    const isMonthly = frequency === 'MONTHLY';
+    const cleanName = String(name || 'Friend of AFOSI').trim().slice(0, 120);
+    const [firstName, ...rest] = cleanName.split(/\s+/);
+
+    const reference = `AFOSI-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
+
+    let subscription;
+    if (isMonthly) {
+      const start = new Date();
+      const end = new Date(start);
+      end.setFullYear(end.getFullYear() + 1);
+      const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+      subscription = { start_date: fmt(start), end_date: fmt(end), frequency: 'MONTHLY' };
+    }
+
+    const order = await pesapal.submitOrder({
+      reference,
+      amount: Math.round(amt * 100) / 100,
+      currency: DONATE_CURRENCY,
+      description: `Donation to AFOSI${isMonthly ? ' (monthly)' : ''}`.slice(0, 100),
+      callbackUrl: `${SITE_URL}/donate.html`,
+      cancellationUrl: `${SITE_URL}/donate.html?cancelled=1`,
+      ipnUrl: `${API_URL}/donate/ipn`,
+      billing: {
+        email_address: cleanEmail || undefined,
+        phone_number: cleanPhone || undefined,
+        country_code: 'KE',
+        first_name: firstName || 'Friend',
+        last_name: rest.join(' ') || 'of AFOSI',
+      },
+      subscription,
+    });
+
+    logDonation({
+      stage: 'initiated', reference, order_tracking_id: order.order_tracking_id,
+      amount: amt, currency: DONATE_CURRENCY, frequency: isMonthly ? 'MONTHLY' : 'ONCE',
+      name: cleanName, email: cleanEmail, phone: cleanPhone,
+    });
+
+    res.json({ redirect_url: order.redirect_url, order_tracking_id: order.order_tracking_id, reference });
+  } catch (err) {
+    console.error('[donate] initiate error:', err.message);
+    res.status(502).json({ message: 'Could not start the payment right now. Please try again shortly.' });
+  }
+});
+
+// Called client-side after the browser bounces back from Pesapal. The redirect
+// carries OrderTrackingId but deliberately no status (Pesapal's design), so we
+// look it up ourselves rather than trusting the query string.
+app.get('/donate/status', async (req, res) => {
+  try {
+    const id = req.query.orderTrackingId;
+    if (!id || typeof id !== 'string') return res.status(400).json({ message: 'Missing orderTrackingId.' });
+    const s = await pesapal.getStatus(id);
+    res.json({
+      status: s.payment_status_description || 'UNKNOWN',
+      statusCode: s.status_code,
+      amount: s.amount,
+      currency: s.currency,
+      method: s.payment_method,
+      merchantReference: s.merchant_reference,
+      confirmationCode: s.confirmation_code,
+    });
+  } catch (err) {
+    console.error('[donate] status error:', err.message);
+    res.status(502).json({ message: 'Could not check the payment status.' });
+  }
+});
+
+// Server-to-server notification from Pesapal. Must ack in the exact shape below.
+app.get('/donate/ipn', async (req, res) => {
+  const { OrderTrackingId, OrderMerchantReference, OrderNotificationType } = req.query;
+  try {
+    if (OrderTrackingId) {
+      const s = await pesapal.getStatus(String(OrderTrackingId));
+      logDonation({
+        stage: 'ipn', reference: OrderMerchantReference, order_tracking_id: OrderTrackingId,
+        status: s.payment_status_description, amount: s.amount, currency: s.currency, method: s.payment_method,
+      });
+    }
+  } catch (err) {
+    console.error('[donate] ipn error:', err.message);
+  }
+  res.json({
+    orderNotificationType: OrderNotificationType || 'IPNCHANGE',
+    orderTrackingId: OrderTrackingId,
+    orderMerchantReference: OrderMerchantReference,
+    status: 200,
+  });
+});
+
 app.listen(PORT, HOST, () => {
   console.log(`afosi-chat listening on http://${HOST}:${PORT} (model: ${MODEL})`);
+  console.log(`donations: ${pesapal.configured() ? `enabled (${pesapal.PESAPAL_ENV})` : 'disabled — set PESAPAL_CONSUMER_KEY/SECRET in server/.env'}`);
 });
