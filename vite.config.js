@@ -19,6 +19,7 @@ export default defineConfig({
         contact: resolve(__dirname, 'contact.html'),
         partners: resolve(__dirname, 'partners.html'),
         donate: resolve(__dirname, 'donate.html'),
+        whereYourMoneyGoes: resolve(__dirname, 'where-your-money-goes.html'),
       },
     },
   },
