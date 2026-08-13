@@ -209,16 +209,20 @@ if (root) {
 
     let settled = false;
     const popup = new window.PaystackPop();
-    popup.newTransaction({
+    // Built conditionally rather than as one literal with `field: x || undefined`
+    // — Paystack's SDK validates transaction params against a schema, and a
+    // key that's *present but undefined* can fail that validation
+    // differently than a key that's simply absent (this is what caused the
+    // "Invalid transaction parameters" error on donations with no phone
+    // number / a one-time gift with no planCode).
+    const options = {
       key: order.publicKey,
       email: order.customer.email,
       amount: Math.round(order.amount * 100), // Paystack wants KES cents, not shillings
       currency: order.currency,
       reference: order.reference,
       channels: order.channels,
-      planCode: order.planCode || undefined,
       firstName: order.customer.name,
-      phone: order.customer.phone || undefined,
       metadata: {
         custom_fields: [{ display_name: 'Donation type', variable_name: 'donation_type', value: freq === 'MONTHLY' ? 'Monthly donation to AFOSI' : 'Donation to AFOSI' }],
       },
@@ -233,7 +237,11 @@ if (root) {
         settled = true;
         renderResult('failed', 'Payment failed', 'Something went wrong during checkout. If you were charged, email info@afosi.org with your reference and we will sort it out.', { retry: true });
       },
-    });
+    };
+    if (order.planCode) options.planCode = order.planCode;
+    if (order.customer.phone) options.phone = order.customer.phone;
+
+    popup.newTransaction(options);
   }
 
   // Never trust Paystack's own client-side callback claim of success — ask
