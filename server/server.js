@@ -358,7 +358,9 @@ app.post('/donate/initiate', donateLimiter, async (req, res) => {
     // a saved card authorization; M-Pesa has no equivalent token) — restrict
     // the channel list so a "monthly" donor isn't shown a payment method that
     // silently won't recur. See the caveat on paystack.js's createPlan().
-    let channels = ['card', 'mobile_money', 'bank_transfer', 'ussd'];
+    // No 'ussd' here — Paystack's USSD channel is Nigeria-only; requesting it
+    // for a KES transaction makes their checkout popup throw on init.
+    let channels = ['card', 'mobile_money', 'bank_transfer'];
     if (isMonthly) {
       channels = ['card'];
       const planKey = `${DONATE_CURRENCY}:${roundedAmount}`;

@@ -163,22 +163,36 @@ if (root) {
     const name = document.getElementById('donate-name').value.trim();
     const email = document.getElementById('donate-email').value.trim();
     const phone = document.getElementById('donate-phone').value.trim();
+    let order;
     try {
       const res = await fetch(`${DONATE_URL}/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, name, email, phone, frequency: freq }),
       });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.reference || !json.publicKey) {
+      order = await res.json().catch(() => ({}));
+      if (!res.ok || !order.reference || !order.publicKey) {
         modalLocked = false;
-        renderResult('failed', 'Could not start payment', json.message || 'Something went wrong on our end. Please try again shortly.', { retry: true });
+        renderResult('failed', 'Could not start payment', order.message || 'Something went wrong on our end. Please try again shortly.', { retry: true });
         return;
       }
-      openPaystackCheckout(json, freq);
     } catch (err) {
+      console.error('[donate] /initiate request failed:', err);
       modalLocked = false;
       renderResult('failed', 'Network error', 'Please check your connection and try again.', { retry: true });
+      return;
+    }
+
+    // Separate try/catch: a failure here is Paystack's popup itself, not the
+    // network — conflating the two under one message previously hid the real
+    // error (an unsupported 'ussd' channel for KES) behind a generic
+    // "Network error" toast with nothing logged to diagnose it.
+    try {
+      openPaystackCheckout(order, freq);
+    } catch (err) {
+      console.error('[donate] could not open Paystack checkout:', err);
+      modalLocked = false;
+      renderResult('failed', 'Payment could not load', 'The secure checkout could not start. Please refresh the page and try again, or email info@afosi.org.', { retry: true });
     }
   }
 

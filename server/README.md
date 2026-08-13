@@ -49,7 +49,7 @@ See `.env.example`. Key vars: `OPENAI_API_KEY` (required), `OPENAI_MODEL`
 - Input length caps + capped `max_tokens` to bound cost.
 - Prompt-injection guardrails in the system prompt; answers restricted to AFOSI topics.
 
-## Donations (Paystack — M-Pesa + card + bank transfer + USSD)
+## Donations (Paystack — M-Pesa + card + bank transfer)
 
 Same service, four extra routes: `GET /donate/config`, `POST /donate/initiate`,
 `POST /donate/verify`, `POST /donate/webhook`. The Paystack secret key lives
