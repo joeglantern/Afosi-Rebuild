@@ -56,15 +56,15 @@
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:6px;">
             <div>
-              <label style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin-bottom:10px;">Email</label>
-              <input id="donate-email" type="email" placeholder="you@example.com" style="width:100%;padding:14px 16px;border:2px solid #17150F;background:#FFFFFF;color:#17150F;font-family:Manrope,sans-serif;font-size:15px;outline:none;">
+              <label style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin-bottom:10px;">Email *</label>
+              <input id="donate-email" type="email" required placeholder="you@example.com" style="width:100%;padding:14px 16px;border:2px solid #17150F;background:#FFFFFF;color:#17150F;font-family:Manrope,sans-serif;font-size:15px;outline:none;">
             </div>
             <div>
-              <label style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin-bottom:10px;">M-Pesa phone</label>
+              <label style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin-bottom:10px;">M-Pesa phone (optional)</label>
               <input id="donate-phone" type="tel" placeholder="07XX XXX XXX" style="width:100%;padding:14px 16px;border:2px solid #17150F;background:#FFFFFF;color:#17150F;font-family:Manrope,sans-serif;font-size:15px;outline:none;">
             </div>
           </div>
-          <p style="font-size:13px;color:#8A8175;margin:0 0 24px;">Provide at least one — email for a card receipt, phone number for M-Pesa.</p>
+          <p style="font-size:13px;color:#8A8175;margin:0 0 24px;">Email is required for checkout and your receipt. If you're paying by M-Pesa, you'll enter your number in the secure checkout window.</p>
 
           <div id="donate-error" style="display:none;background:#FBE4E0;border:2px solid #B23A2E;color:#8A241A;padding:12px 14px;font-size:14px;margin-bottom:20px;"></div>
 
@@ -76,7 +76,7 @@
             <img src="/assets/afosi/payments/mpesa.svg" alt="M-Pesa" style="height:14px;width:auto;">
             <img src="/assets/afosi/payments/visa.svg" alt="Visa" style="height:11px;width:auto;">
             <img src="/assets/afosi/payments/mastercard.svg" alt="Mastercard" style="height:16px;width:auto;">
-            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#8A8175;">via Pesapal secure checkout</span>
+            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.04em;color:#8A8175;">via Paystack secure checkout</span>
           </div>
         </form>
       </div>
@@ -97,7 +97,7 @@
         <div style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:26px;">
           <h4 style="font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;margin:0 0 14px;">Secure by design</h4>
           <ul style="margin:0;padding:0 0 0 18px;font-size:14px;line-height:1.8;color:#5A5346;">
-            <li>Payment is processed by Pesapal — AFOSI never sees or stores your card or M-Pesa details.</li>
+            <li>Payment is processed by Paystack — AFOSI never sees or stores your card or M-Pesa details.</li>
             <li>You'll get an instant email confirmation once your gift goes through.</li>
             <li>Monthly gifts can be cancelled any time by emailing us.</li>
           </ul>
@@ -111,9 +111,9 @@
   <section data-section style="max-width:900px;margin:0 auto;padding:20px 40px 100px;">
     <div data-reveal style="margin-bottom:30px;"><span style="display:inline-flex;align-items:center;gap:10px;"><span style="width:10px;height:10px;background:#F26522;"></span><span style="font-family:'Space Grotesk',sans-serif;font-size:13.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;white-space:nowrap;color:currentColor;">Questions</span></span><h2 data-scramble style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(28px,3.4vw,44px);line-height:1.05;letter-spacing:-0.02em;margin:12px 0 0;">Before you give.</h2></div>
     <div data-reveal style="display:flex;flex-direction:column;gap:2px;">
-      <details style="background:#FFFFFF;border:2px solid #17150F;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Is my payment secure?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Yes. Payments are handled entirely by Pesapal, a licensed payment gateway used across East Africa. AFOSI never receives or stores your card number or M-Pesa PIN.</p></details>
-      <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">What payment methods can I use?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">M-Pesa (an STK push prompt is sent to your phone) or any Visa/Mastercard debit or credit card.</p></details>
-      <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Will I get a receipt?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Yes — Pesapal sends a confirmation immediately after payment. For any additional documentation, email info@afosi.org with your reference number.</p></details>
+      <details style="background:#FFFFFF;border:2px solid #17150F;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Is my payment secure?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Yes. Payments are handled entirely by Paystack, a licensed payment gateway used across Africa. AFOSI never receives or stores your card number or M-Pesa PIN.</p></details>
+      <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">What payment methods can I use?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">For a one-time gift: M-Pesa (an STK push prompt is sent to your phone), any Visa/Mastercard debit or credit card, or a direct bank transfer. Monthly gifts are billed automatically to a card, since M-Pesa doesn't support recurring auto-debit.</p></details>
+      <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Will I get a receipt?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Yes — Paystack sends a confirmation immediately after payment. For any additional documentation, email info@afosi.org with your reference number.</p></details>
       <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Can I cancel a monthly donation?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Any time — email info@afosi.org with the name or phone/email you donated with and we'll stop it right away.</p></details>
       <details style="background:#FFFFFF;border:2px solid #17150F;border-top:none;padding:20px 22px;"><summary style="cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;">Where exactly does my money go?</summary><p style="font-size:14.5px;color:#5A5346;margin:12px 0 0;line-height:1.6;">Directly into AFOSI's active programs across health, education, environment, livelihoods, leadership and humanitarian response. For a fuller picture of our work, see <a href="/about.html" style="font-weight:700;">About</a> and <a href="/projects.html" style="font-weight:700;">Projects</a>.</p></details>
     </div>
@@ -125,6 +125,7 @@
   </div>
 
 </div>
+<script src="https://js.paystack.co/v2/inline.js"></script>
 <script type="module" src="/src/site.js"></script>
 <script type="module" src="/src/donate.js"></script>
 </body>

@@ -16,7 +16,8 @@ import dotenv from 'dotenv';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import * as pesapal from './pesapal.js';
+import * as paystack from './paystack.js';
+import * as donations from './donations-store.js';
 import { handleImgRequest } from './imgproxy.js';
 
 // Load server/.env regardless of the process working directory (pm2, systemd, etc.)
@@ -45,8 +46,8 @@ const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
 
 // ---------------------------------------------------------------------------
 // Donation log — no database in this project, so donations are appended as
-// JSON lines for the team to reconcile. Pesapal itself remains the source of
-// truth for actual settlement.
+// JSON lines for the team to reconcile. Paystack's own dashboard remains
+// the source of truth for actual settlement.
 // ---------------------------------------------------------------------------
 const DONATIONS_LOG = join(__dirname, 'donations.log');
 function logDonation(record) {
@@ -199,7 +200,13 @@ async function getLiveContext() {
 // ---------------------------------------------------------------------------
 const app = express();
 app.set('trust proxy', 1); // sits behind nginx
-app.use(express.json({ limit: '32kb' }));
+app.use(express.json({
+  limit: '32kb',
+  // Paystack's webhook signature is an HMAC of the exact bytes they sent —
+  // stash the raw buffer here so /donate/webhook can hash the real thing
+  // instead of a re-serialized (and potentially byte-different) req.body.
+  verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(
   cors({
     origin(origin, cb) {
@@ -296,9 +303,12 @@ app.post('/chat', chatLimiter, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Donations — Pesapal API 3.0 (M-Pesa + card via a single hosted checkout).
-// The consumer key/secret only ever live here; the browser gets back a
-// Pesapal-hosted redirect_url and never touches credentials.
+// Donations — Paystack inline checkout (M-Pesa + card + bank transfer + USSD).
+// The secret key only ever lives here. The browser gets the PUBLIC key (safe
+// to expose client-side by design) plus a server-generated reference and
+// authoritative amount/currency — it never decides those values itself.
+// Every payment is verified server-side against Paystack's API before being
+// marked paid; the client-side popup callback is never trusted on its own.
 // ---------------------------------------------------------------------------
 const donateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
@@ -308,11 +318,21 @@ const donateLimiter = rateLimit({
   handler: (req, res) => res.status(429).json({ message: 'Too many attempts. Please wait a few minutes and try again.' }),
 });
 
-app.get('/donate/health', (req, res) => res.json({ ok: true, configured: pesapal.configured(), env: pesapal.getPesapalEnv() }));
+app.get('/donate/health', (req, res) => res.json({ ok: true, configured: paystack.configured() }));
+
+// Frontend reads the (safe-to-expose) public key + currency/minimum from
+// here rather than baking them into the built JS, so rotating the key on the
+// VPS never needs a rebuild.
+app.get('/donate/config', (req, res) => {
+  if (!paystack.configured()) {
+    return res.status(503).json({ message: 'Online donations are not enabled yet.' });
+  }
+  res.json({ publicKey: paystack.getPublicKey(), currency: DONATE_CURRENCY, minAmount: DONATE_MIN_AMOUNT });
+});
 
 app.post('/donate/initiate', donateLimiter, async (req, res) => {
   try {
-    if (!pesapal.configured()) {
+    if (!paystack.configured()) {
       return res.status(503).json({ message: 'Online donations are not enabled yet. Please email info@afosi.org.' });
     }
     const { amount, name, email, phone, frequency } = req.body || {};
@@ -322,101 +342,134 @@ app.post('/donate/initiate', donateLimiter, async (req, res) => {
     }
     const cleanEmail = typeof email === 'string' ? email.trim().slice(0, 200) : '';
     const cleanPhone = typeof phone === 'string' ? phone.trim().slice(0, 20) : '';
-    if (!cleanEmail && !cleanPhone) {
-      return res.status(400).json({ message: 'Please provide an email or phone number so we can send a receipt.' });
+    // Paystack's transaction API requires an email on every charge, even for
+    // M-Pesa/mobile money — unlike Flutterwave, there's no email-or-phone
+    // choice here.
+    if (!cleanEmail) {
+      return res.status(400).json({ message: 'Please provide an email address so we can process your payment and send a receipt.' });
     }
     const isMonthly = frequency === 'MONTHLY';
     const cleanName = String(name || 'Friend of AFOSI').trim().slice(0, 120);
-    const [firstName, ...rest] = cleanName.split(/\s+/);
+    const roundedAmount = Math.round(amt * 100) / 100;
+    const reference = `AFOSI-DON-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
 
-    const reference = `AFOSI-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`.toUpperCase();
-
-    let subscription;
+    let planCode;
+    // Recurring billing only works on card (Paystack subscriptions auto-charge
+    // a saved card authorization; M-Pesa has no equivalent token) — restrict
+    // the channel list so a "monthly" donor isn't shown a payment method that
+    // silently won't recur. See the caveat on paystack.js's createPlan().
+    let channels = ['card', 'mobile_money', 'bank_transfer', 'ussd'];
     if (isMonthly) {
-      const start = new Date();
-      const end = new Date(start);
-      end.setFullYear(end.getFullYear() + 1);
-      const fmt = (d) => `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
-      subscription = { start_date: fmt(start), end_date: fmt(end), frequency: 'MONTHLY' };
+      channels = ['card'];
+      const planKey = `${DONATE_CURRENCY}:${roundedAmount}`;
+      planCode = donations.getPlan(planKey);
+      if (!planCode) {
+        planCode = await paystack.createPlan(roundedAmount, DONATE_CURRENCY);
+        await donations.savePlan(planKey, planCode);
+      }
     }
 
-    const order = await pesapal.submitOrder({
-      reference,
-      amount: Math.round(amt * 100) / 100,
-      currency: DONATE_CURRENCY,
-      description: `Donation to AFOSI${isMonthly ? ' (monthly)' : ''}`.slice(0, 100),
-      callbackUrl: `${SITE_URL}/donate.html`,
-      cancellationUrl: `${SITE_URL}/donate.html?cancelled=1`,
-      ipnUrl: `${API_URL}/donate/ipn`,
-      billing: {
-        email_address: cleanEmail || undefined,
-        phone_number: cleanPhone || undefined,
-        country_code: 'KE',
-        first_name: firstName || 'Friend',
-        last_name: rest.join(' ') || 'of AFOSI',
-      },
-      subscription,
-    });
-
-    logDonation({
-      stage: 'initiated', reference, order_tracking_id: order.order_tracking_id,
-      amount: amt, currency: DONATE_CURRENCY, frequency: isMonthly ? 'MONTHLY' : 'ONCE',
+    await donations.savePending(reference, {
+      amount: roundedAmount, currency: DONATE_CURRENCY, frequency: isMonthly ? 'MONTHLY' : 'ONCE',
       name: cleanName, email: cleanEmail, phone: cleanPhone,
     });
 
-    res.json({ redirect_url: order.redirect_url, order_tracking_id: order.order_tracking_id, reference });
+    logDonation({
+      stage: 'initiated', reference, amount: roundedAmount, currency: DONATE_CURRENCY,
+      frequency: isMonthly ? 'MONTHLY' : 'ONCE', name: cleanName, email: cleanEmail, phone: cleanPhone,
+    });
+
+    res.json({
+      reference,
+      amount: roundedAmount,
+      currency: DONATE_CURRENCY,
+      publicKey: paystack.getPublicKey(),
+      planCode: planCode || undefined,
+      channels,
+      customer: { email: cleanEmail, phone: cleanPhone || undefined, name: cleanName },
+    });
   } catch (err) {
     console.error('[donate] initiate error:', err.message);
     res.status(502).json({ message: 'Could not start the payment right now. Please try again shortly.' });
   }
 });
 
-// Called client-side after the browser bounces back from Pesapal. The redirect
-// carries OrderTrackingId but deliberately no status (Pesapal's design), so we
-// look it up ourselves rather than trusting the query string.
-app.get('/donate/status', async (req, res) => {
+// Called by the frontend right after Paystack's inline popup fires
+// onSuccess. We never trust that callback's own claim of success — we look
+// the transaction up on Paystack's servers ourselves and cross-check the
+// amount/currency/reference against what we recorded at /donate/initiate
+// before marking the donation paid. Idempotent: a reference already paid
+// (e.g. the webhook beat us to it) just returns success again.
+app.post('/donate/verify', donateLimiter, async (req, res) => {
   try {
-    const id = req.query.orderTrackingId;
-    if (!id || typeof id !== 'string') return res.status(400).json({ message: 'Missing orderTrackingId.' });
-    const s = await pesapal.getStatus(id);
-    res.json({
-      status: s.payment_status_description || 'UNKNOWN',
-      statusCode: s.status_code,
-      amount: s.amount,
-      currency: s.currency,
-      method: s.payment_method,
-      merchantReference: s.merchant_reference,
-      confirmationCode: s.confirmation_code,
-    });
+    const { reference } = req.body || {};
+    if (!reference) return res.status(400).json({ message: 'Missing transaction details.' });
+
+    const pending = donations.getDonation(String(reference));
+    if (!pending) return res.status(404).json({ message: 'Unknown donation reference.' });
+
+    if (pending.status === 'paid') {
+      return res.json({ success: true, status: 'paid', amount: pending.amount, currency: pending.currency });
+    }
+
+    const data = await paystack.verifyTransaction(reference);
+
+    const amountOk = Number(data.amount) >= Number(pending.amount) - 0.01;
+    const currencyOk = String(data.currency).toUpperCase() === String(pending.currency).toUpperCase();
+    const refOk = String(data.reference) === String(reference);
+
+    if (data.status !== 'success' || !amountOk || !currencyOk || !refOk) {
+      await donations.markStatus(reference, 'failed', { paystack_status: data.status });
+      logDonation({ stage: 'verify_failed', reference, paystack_status: data.status });
+      return res.status(402).json({ success: false, message: 'Payment could not be verified.' });
+    }
+
+    await donations.markStatus(reference, 'paid', { method: data.channel, gateway_response: data.gateway_response });
+    logDonation({ stage: 'verified', reference, amount: data.amount, currency: data.currency, method: data.channel });
+
+    res.json({ success: true, status: 'paid', amount: data.amount, currency: data.currency });
   } catch (err) {
-    console.error('[donate] status error:', err.message);
-    res.status(502).json({ message: 'Could not check the payment status.' });
+    console.error('[donate] verify error:', err.message);
+    res.status(502).json({ message: 'Could not verify the payment right now.' });
   }
 });
 
-// Server-to-server notification from Pesapal. Must ack in the exact shape below.
-app.get('/donate/ipn', async (req, res) => {
-  const { OrderTrackingId, OrderMerchantReference, OrderNotificationType } = req.query;
+// Server-to-server notification from Paystack — a durable, async backstop to
+// the verification /donate/verify already does client-side (covers a donor
+// who completes payment but never returns to the tab). Signature is a real
+// HMAC (unlike Flutterwave's static shared-hash compare), computed over the
+// exact raw bytes Paystack sent — see the express.json() verify() option
+// above. Processing is idempotent on reference so a redelivered webhook can
+// never double-credit a donation.
+app.post('/donate/webhook', async (req, res) => {
+  const signature = req.headers['x-paystack-signature'];
+  if (!paystack.verifyWebhookSignature(req.rawBody, signature)) {
+    return res.status(401).json({ message: 'Invalid signature.' });
+  }
+  res.status(200).json({ received: true }); // ack immediately; Paystack retries on non-2xx
+
   try {
-    if (OrderTrackingId) {
-      const s = await pesapal.getStatus(String(OrderTrackingId));
-      logDonation({
-        stage: 'ipn', reference: OrderMerchantReference, order_tracking_id: OrderTrackingId,
-        status: s.payment_status_description, amount: s.amount, currency: s.currency, method: s.payment_method,
-      });
+    const event = req.body || {};
+    if (event.event !== 'charge.success') return;
+    const reference = event.data?.reference;
+    if (!reference) return;
+
+    const pending = donations.getDonation(String(reference));
+    if (!pending || pending.status === 'paid') return; // unknown or already settled — nothing to do
+
+    const data = await paystack.verifyTransaction(reference);
+    const amountOk = Number(data.amount) >= Number(pending.amount) - 0.01;
+    const currencyOk = String(data.currency).toUpperCase() === String(pending.currency).toUpperCase();
+    if (data.status === 'success' && amountOk && currencyOk) {
+      await donations.markStatus(reference, 'paid', { method: data.channel, gateway_response: data.gateway_response, via: 'webhook' });
+      logDonation({ stage: 'webhook_verified', reference, amount: data.amount, currency: data.currency });
     }
   } catch (err) {
-    console.error('[donate] ipn error:', err.message);
+    console.error('[donate] webhook processing error:', err.message);
   }
-  res.json({
-    orderNotificationType: OrderNotificationType || 'IPNCHANGE',
-    orderTrackingId: OrderTrackingId,
-    orderMerchantReference: OrderMerchantReference,
-    status: 200,
-  });
 });
 
 app.listen(PORT, HOST, () => {
   console.log(`afosi-chat listening on http://${HOST}:${PORT} (model: ${MODEL})`);
-  console.log(`donations: ${pesapal.configured() ? `enabled (${pesapal.getPesapalEnv()})` : 'disabled — set PESAPAL_CONSUMER_KEY/SECRET in server/.env'}`);
+  console.log(`donations: ${paystack.configured() ? 'enabled' : 'disabled — set PAYSTACK_PUBLIC_KEY/PAYSTACK_SECRET_KEY in server/.env'}`);
 });

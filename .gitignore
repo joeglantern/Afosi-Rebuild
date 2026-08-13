@@ -25,3 +25,6 @@ image.png
 
 # Runtime image proxy cache (server/imgproxy.js) — regenerated on demand
 server/img-cache/
+
+# Donation state (server/donations-store.js) — regenerated from Paystack
+server/donations-store.json
