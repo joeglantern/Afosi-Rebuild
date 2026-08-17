@@ -168,6 +168,11 @@ const FOOTER_HTML = `
       </div>
       <div style="margin-top:56px;padding-top:26px;border-top:1px solid #2C2820;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;">
         <span style="font-size:13.5px;color:#8B857A;">© 2026 Action for Sustainability Initiative (AFOSI). All rights reserved.</span>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;">
+          <a href="/terms.html" style="font-size:13px;color:#8B857A;">Terms of Service</a>
+          <a href="/privacy-policy.html" style="font-size:13px;color:#8B857A;">Privacy Policy</a>
+          <a href="/refund-policy.html" style="font-size:13px;color:#8B857A;">Refund Policy</a>
+        </div>
         <span style="font-family:'Space Grotesk',sans-serif;font-size:12.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B857A;">A Sustainable World.</span>
       </div>
     </div>
