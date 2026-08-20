@@ -178,6 +178,23 @@ const FOOTER_HTML = `
     </div>
   </footer>`;
 
+// Signvrse sign-language interpreter widget — loaded as a real <script>
+// element (not innerHTML) so the browser actually executes it, on every
+// page since this file is included site-wide. The widget reads the page's
+// own text to interpret, so it needs to sit on the finished DOM rather than
+// load before the shell/content above it exists.
+(function loadSignvrseWidget() {
+  if (document.querySelector('script[data-key="sk_live_HSKg8RuIJS_U3WjxbudAta-d3bCcfzI3SJxZV5ifmsk"]')) return;
+  const s = document.createElement('script');
+  s.src = 'https://storage.googleapis.com/terp-widget-prod/v1/widget.min.js';
+  s.dataset.key = 'sk_live_HSKg8RuIJS_U3WjxbudAta-d3bCcfzI3SJxZV5ifmsk';
+  s.dataset.api = 'https://terp-backend-tkqwl2jv7a-uc.a.run.app';
+  s.dataset.highlightColor = '#F7941D';
+  s.dataset.position = 'bottom-right';
+  s.async = true;
+  document.body.appendChild(s);
+})();
+
 // Inject shell into the page wrapper (#af-page)
 (function injectShell() {
   const page = document.getElementById('af-page');

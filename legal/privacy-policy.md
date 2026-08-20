@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** August 12, 2026
+**Effective date:** August 20, 2026
 
 This Privacy Policy explains how **Action for Sustainability Initiative (AFOSI)**, a non-governmental organization registered in Kenya (registration no. OP.218/051/12-0101/8065), with offices at Manga Hse, Kiambere Rd, Upper Hill, Nairobi, Kenya ("AFOSI," "we," "us," or "our"), collects, uses, and protects personal information when you visit afosi.org (the "Site") or use the services on it. It should be read together with our [Terms of Service](/terms.html).
 
@@ -10,7 +10,8 @@ This Privacy Policy explains how **Action for Sustainability Initiative (AFOSI)*
 - **Applications.** When you apply for an opportunity or program through the Site, we collect the details you submit (such as your name, email, phone number, and any documents you upload, e.g. a CV) so we can review your application and contact you about it.
 - **Contact form.** The form on our Contact page does not submit data to us directly — clicking "Send message" opens your own email app addressed to info@afosi.org. We only receive what you choose to send from your own email account.
 - **Chat assistant.** Messages you send to the AFOSI website assistant are sent to OpenAI to generate a response and are checked against OpenAI's moderation system before we reply. We rate-limit use of the assistant by IP address to prevent abuse.
-- **Cookies and tracking.** We do not use cookies, advertising trackers, or third-party analytics on the Site. We use limited browser-local storage on your own device (`sessionStorage`) so our homepage loading animation doesn't replay on every page you visit — this data stays on your device and is never sent to us.
+- **Accessibility interpreter widget.** The Site loads a sign-language interpreter widget, provided by Signvrse, to make our content accessible to Deaf and hard-of-hearing visitors. It runs as a script from Signvrse's own servers and reads the page's visible text to generate the interpretation. We have not independently verified everything this third-party widget does beyond that; see Signvrse's own privacy policy for details of how it handles data.
+- **Cookies and tracking.** We do not use cookies, advertising trackers, or third-party analytics on the Site ourselves. The accessibility widget above is a third-party script and may set its own cookies or local storage as part of how it runs. Separately, we use limited browser-local storage on your own device (`sessionStorage`) so our homepage loading animation doesn't replay on every page you visit — this data stays on your device and is never sent to us.
 
 ## 2. How we use your information
 
@@ -32,6 +33,7 @@ We share personal information only with the service providers that help us run t
 - **Supabase** — stores site content and application data
 - **Resend** — delivers the email notification that alerts our team to a new application
 - **OpenAI** — processes messages sent to the chat assistant to generate a reply
+- **Signvrse** — provides the sign-language interpreter widget and processes the Site's visible page content to generate its interpretation
 
 Each of these providers processes data under their own security and privacy standards. We do not share your information with anyone else except where required by law.
 
