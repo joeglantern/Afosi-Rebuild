@@ -34,8 +34,17 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
   .split(',').map((s) => s.trim()).filter(Boolean);
 const SITE_URL = (process.env.SITE_URL || 'https://afosi.org').replace(/\/$/, '');
 const API_URL = (process.env.API_URL || 'https://api.afosi.org').replace(/\/$/, '');
-const DONATE_CURRENCY = process.env.DONATE_CURRENCY || 'KES';
-const DONATE_MIN_AMOUNT = Number(process.env.DONATE_MIN_AMOUNT) || 50;
+// Paystack Kenya settles in KES or USD (per their live-mode approval email —
+// USD needs a separate USD bank account on the dashboard, KES is the
+// default). The donor picks a currency client-side (auto-detected, or
+// switched by hand); the server treats that choice as untrusted input and
+// only ever accepts one of these two. Mobile money (M-Pesa) and bank
+// transfer are KES-only rails, so USD checkouts are restricted to card.
+const DONATE_CURRENCIES = {
+  KES: { minAmount: 50, channels: ['card', 'mobile_money', 'bank_transfer'] },
+  USD: { minAmount: 1, channels: ['card'] },
+};
+const DEFAULT_DONATE_CURRENCY = 'KES';
 
 if (!OPENAI_API_KEY) {
   console.error('FATAL: OPENAI_API_KEY is not set. Put it in server/.env — never in the repo.');
@@ -320,14 +329,18 @@ const donateLimiter = rateLimit({
 
 app.get('/donate/health', (req, res) => res.json({ ok: true, configured: paystack.configured() }));
 
-// Frontend reads the (safe-to-expose) public key + currency/minimum from
+// Frontend reads the (safe-to-expose) public key + supported currencies from
 // here rather than baking them into the built JS, so rotating the key on the
 // VPS never needs a rebuild.
 app.get('/donate/config', (req, res) => {
   if (!paystack.configured()) {
     return res.status(503).json({ message: 'Online donations are not enabled yet.' });
   }
-  res.json({ publicKey: paystack.getPublicKey(), currency: DONATE_CURRENCY, minAmount: DONATE_MIN_AMOUNT });
+  res.json({
+    publicKey: paystack.getPublicKey(),
+    defaultCurrency: DEFAULT_DONATE_CURRENCY,
+    currencies: Object.fromEntries(Object.entries(DONATE_CURRENCIES).map(([code, c]) => [code, { minAmount: c.minAmount }])),
+  });
 });
 
 app.post('/donate/initiate', donateLimiter, async (req, res) => {
@@ -336,9 +349,15 @@ app.post('/donate/initiate', donateLimiter, async (req, res) => {
       return res.status(503).json({ message: 'Online donations are not enabled yet. Please email info@afosi.org.' });
     }
     const { amount, name, email, phone, frequency } = req.body || {};
+    // The donor's currency choice is untrusted input — only ever accept one
+    // of our two configured currencies, silently falling back to the default
+    // rather than trusting an arbitrary value through to Paystack.
+    const requestedCurrency = typeof req.body?.currency === 'string' ? req.body.currency.trim().toUpperCase() : '';
+    const currency = DONATE_CURRENCIES[requestedCurrency] ? requestedCurrency : DEFAULT_DONATE_CURRENCY;
+    const { minAmount, channels: currencyChannels } = DONATE_CURRENCIES[currency];
     const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt < DONATE_MIN_AMOUNT) {
-      return res.status(400).json({ message: `Please enter at least ${DONATE_MIN_AMOUNT} ${DONATE_CURRENCY}.` });
+    if (!Number.isFinite(amt) || amt < minAmount) {
+      return res.status(400).json({ message: `Please enter at least ${minAmount} ${currency}.` });
     }
     const cleanEmail = typeof email === 'string' ? email.trim().slice(0, 200) : '';
     const cleanPhone = typeof phone === 'string' ? phone.trim().slice(0, 20) : '';
@@ -360,31 +379,31 @@ app.post('/donate/initiate', donateLimiter, async (req, res) => {
     // silently won't recur. See the caveat on paystack.js's createPlan().
     // No 'ussd' here — Paystack's USSD channel is Nigeria-only; requesting it
     // for a KES transaction makes their checkout popup throw on init.
-    let channels = ['card', 'mobile_money', 'bank_transfer'];
+    let channels = currencyChannels;
     if (isMonthly) {
       channels = ['card'];
-      const planKey = `${DONATE_CURRENCY}:${roundedAmount}`;
+      const planKey = `${currency}:${roundedAmount}`;
       planCode = donations.getPlan(planKey);
       if (!planCode) {
-        planCode = await paystack.createPlan(roundedAmount, DONATE_CURRENCY);
+        planCode = await paystack.createPlan(roundedAmount, currency);
         await donations.savePlan(planKey, planCode);
       }
     }
 
     await donations.savePending(reference, {
-      amount: roundedAmount, currency: DONATE_CURRENCY, frequency: isMonthly ? 'MONTHLY' : 'ONCE',
+      amount: roundedAmount, currency, frequency: isMonthly ? 'MONTHLY' : 'ONCE',
       name: cleanName, email: cleanEmail, phone: cleanPhone,
     });
 
     logDonation({
-      stage: 'initiated', reference, amount: roundedAmount, currency: DONATE_CURRENCY,
+      stage: 'initiated', reference, amount: roundedAmount, currency,
       frequency: isMonthly ? 'MONTHLY' : 'ONCE', name: cleanName, email: cleanEmail, phone: cleanPhone,
     });
 
     res.json({
       reference,
       amount: roundedAmount,
-      currency: DONATE_CURRENCY,
+      currency,
       publicKey: paystack.getPublicKey(),
       planCode: planCode || undefined,
       channels,

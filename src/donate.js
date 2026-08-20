@@ -13,13 +13,33 @@ const DONATE_URL = (import.meta.env && import.meta.env.VITE_DONATE_URL) || 'http
 
 const HEART_SVG = '<svg width="28" height="28" viewBox="0 0 24 24" fill="#141210"><path d="M12 21s-7.6-4.6-10.3-9.6C.4 8.5 1.7 4.9 5.3 4c2-.5 4 .3 5.2 2 .3.5.9.5 1.2 0 1.2-1.7 3.2-2.5 5.2-2 3.6.9 4.9 4.5 3.4 7.4C19.6 16.4 12 21 12 21z"/></svg>';
 
-function fmtKES(n) {
-  return `KES ${Number(n).toLocaleString()}`;
+// Kept in sync with server.js's DONATE_CURRENCIES — the server re-validates
+// this regardless, but the form needs its own copy to paint chips/labels
+// before it ever talks to the backend.
+const CURRENCIES = { KES: { minAmount: 50 }, USD: { minAmount: 1 } };
+
+function fmtAmount(n, currency) {
+  return `${currency} ${Number(n).toLocaleString()}`;
+}
+
+// Best-effort default currency: Kenyan timezone -> KES, everything else ->
+// USD. Purely client-side (no IP lookup, no third-party service, nothing to
+// disclose in the privacy policy) — the donor can always switch it by hand
+// with the KES/USD toggle right above the amount field.
+function detectDefaultCurrency() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    return tz === 'Africa/Nairobi' ? 'KES' : 'USD';
+  } catch {
+    return 'KES';
+  }
 }
 
 const root = document.getElementById('donate-form');
 if (root) {
-  const chipsWrap = document.getElementById('donate-amount-chips');
+  const chipGroups = { KES: document.getElementById('donate-amount-chips-KES'), USD: document.getElementById('donate-amount-chips-USD') };
+  const currencyBtns = Array.from(document.querySelectorAll('.af-cur-btn'));
+  const amountLabel = document.getElementById('donate-amount-label');
   const customInput = document.getElementById('donate-amount-custom');
   const freqBtns = Array.from(document.querySelectorAll('.af-freq-btn'));
   const errorBox = document.getElementById('donate-error');
@@ -28,10 +48,15 @@ if (root) {
   const modalCard = document.getElementById('donate-modal-card');
 
   let frequency = 'ONCE';
+  let currency = detectDefaultCurrency();
   let selectedChip = null;
 
+  function activeChipsWrap() {
+    return chipGroups[currency];
+  }
+
   function paintChips() {
-    chipsWrap.querySelectorAll('.af-amt-btn').forEach((btn) => {
+    activeChipsWrap().querySelectorAll('.af-amt-btn').forEach((btn) => {
       const active = btn === selectedChip;
       btn.style.background = active ? '#F26522' : 'transparent';
       btn.style.color = active ? '#141210' : '#17150F';
@@ -48,16 +73,32 @@ if (root) {
     submitLabel.textContent = frequency === 'MONTHLY' ? 'Set up monthly gift' : 'Donate securely';
   }
 
-  chipsWrap.querySelectorAll('.af-amt-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      selectedChip = btn;
-      customInput.value = '';
-      paintChips();
-      btn.classList.remove('af-chip-pop');
-      void btn.offsetWidth; // restart the animation on repeat clicks
-      btn.classList.add('af-chip-pop');
+  function paintCurrency() {
+    currencyBtns.forEach((btn) => {
+      const active = btn.dataset.currency === currency;
+      btn.style.background = active ? '#17150F' : 'transparent';
+      btn.style.color = active ? '#FBF6EE' : '#17150F';
+      btn.setAttribute('aria-pressed', String(active));
     });
-  });
+    Object.entries(chipGroups).forEach(([code, el]) => { el.style.display = code === currency ? 'grid' : 'none'; });
+    amountLabel.textContent = `Amount (${currency})`;
+    customInput.min = String(CURRENCIES[currency].minAmount);
+    customInput.placeholder = 'Or enter a custom amount';
+  }
+
+  function wireChips(wrap) {
+    wrap.querySelectorAll('.af-amt-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedChip = btn;
+        customInput.value = '';
+        paintChips();
+        btn.classList.remove('af-chip-pop');
+        void btn.offsetWidth; // restart the animation on repeat clicks
+        btn.classList.add('af-chip-pop');
+      });
+    });
+  }
+  Object.values(chipGroups).forEach(wireChips);
 
   customInput.addEventListener('input', () => {
     if (customInput.value) { selectedChip = null; paintChips(); }
@@ -67,16 +108,30 @@ if (root) {
     btn.addEventListener('click', () => { frequency = btn.dataset.freq; paintFreq(); });
   });
 
+  currencyBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.currency === currency) return;
+      currency = btn.dataset.currency;
+      selectedChip = null;
+      customInput.value = '';
+      paintCurrency();
+      paintChips();
+    });
+  });
+
   // Prefill from a homepage quick-pick link, e.g. /donate.html?amount=2500
+  // (always against the detected/default currency's chips — a link doesn't
+  // carry a currency of its own).
   (function prefillAmount() {
     const qp = new URLSearchParams(location.search);
     const amt = Number(qp.get('amount'));
     if (!amt) return;
-    const match = Array.from(chipsWrap.querySelectorAll('.af-amt-btn')).find((b) => Number(b.dataset.amount) === amt);
+    const match = Array.from(activeChipsWrap().querySelectorAll('.af-amt-btn')).find((b) => Number(b.dataset.amount) === amt);
     if (match) { selectedChip = match; paintChips(); }
     else { customInput.value = String(amt); }
   })();
 
+  paintCurrency();
   paintChips();
   paintFreq();
 
@@ -114,10 +169,14 @@ if (root) {
 
   function renderConfirm(amount, freq) {
     modalLocked = false;
+    // USD has no M-Pesa/bank-transfer rail (see DONATE_CURRENCIES in
+    // server.js) — say so accurately rather than promising a method that
+    // won't actually show up in checkout.
+    const payBy = freq === 'MONTHLY' ? 'card (required for automatic monthly billing)' : (currency === 'USD' ? 'card' : 'M-Pesa, card, or bank transfer');
     modalCard.innerHTML = `
       ${iconCircle('#F26522', HEART_SVG)}
       <h3 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 10px;">Confirm your gift</h3>
-      <p style="font-size:15px;color:#5A5346;line-height:1.6;margin:0 0 26px;">You're about to give <strong style="color:#17150F;">${fmtKES(amount)}</strong>${freq === 'MONTHLY' ? ', <strong style="color:#17150F;">every month</strong>,' : ''} to AFOSI. A secure checkout window will open for you to pay by ${freq === 'MONTHLY' ? 'card (required for automatic monthly billing)' : 'M-Pesa, card, or bank transfer'}.</p>
+      <p style="font-size:15px;color:#5A5346;line-height:1.6;margin:0 0 26px;">You're about to give <strong style="color:#17150F;">${fmtAmount(amount, currency)}</strong>${freq === 'MONTHLY' ? ', <strong style="color:#17150F;">every month</strong>,' : ''} to AFOSI. A secure checkout window will open for you to pay by ${payBy}.</p>
       <div style="display:flex;gap:12px;">
         <button id="donate-modal-cancel" style="cursor:pointer;flex:1;background:transparent;border:2px solid #17150F;color:#17150F;padding:14px 20px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;">Cancel</button>
         <button id="donate-modal-confirm" class="hov-ink" style="cursor:pointer;flex:1;background:#F26522;border:2px solid #17150F;color:#141210;padding:14px 20px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;">Continue →</button>
@@ -168,7 +227,7 @@ if (root) {
       const res = await fetch(`${DONATE_URL}/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, name, email, phone, frequency: freq }),
+        body: JSON.stringify({ amount, currency, name, email, phone, frequency: freq }),
       });
       order = await res.json().catch(() => ({}));
       if (!res.ok || !order.reference || !order.publicKey) {
@@ -218,7 +277,7 @@ if (root) {
     const options = {
       key: order.publicKey,
       email: order.customer.email,
-      amount: Math.round(order.amount * 100), // Paystack wants KES cents, not shillings
+      amount: Math.round(order.amount * 100), // Paystack wants the smallest currency subunit (cents), not whole units
       currency: order.currency,
       reference: order.reference,
       channels: order.channels,
@@ -273,8 +332,8 @@ if (root) {
     const email = document.getElementById('donate-email').value.trim();
     const phone = document.getElementById('donate-phone').value.trim();
 
-    if (!Number.isFinite(amount) || amount < 50) {
-      showError('Please choose or enter an amount of at least KES 50.');
+    if (!Number.isFinite(amount) || amount < CURRENCIES[currency].minAmount) {
+      showError(`Please choose or enter an amount of at least ${fmtAmount(CURRENCIES[currency].minAmount, currency)}.`);
       return;
     }
     if (!email) {

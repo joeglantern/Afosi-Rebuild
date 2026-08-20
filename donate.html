@@ -38,13 +38,26 @@
           </div>
 
           <div style="margin-bottom:24px;">
-            <label style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin-bottom:10px;">Amount (KES)</label>
-            <div id="donate-amount-chips" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <label id="donate-amount-label" style="display:block;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5A5346;margin:0;">Amount (KES)</label>
+              <div id="donate-currency-toggle" style="display:flex;gap:0;border:2px solid #17150F;width:fit-content;">
+                <button type="button" data-currency="KES" class="af-cur-btn" aria-pressed="true" style="cursor:pointer;background:#17150F;color:#FBF6EE;border:none;padding:6px 14px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;">KES</button>
+                <button type="button" data-currency="USD" class="af-cur-btn" aria-pressed="false" style="cursor:pointer;background:transparent;color:#17150F;border:none;border-left:2px solid #17150F;padding:6px 14px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12.5px;">USD</button>
+              </div>
+            </div>
+            <div id="donate-amount-chips-KES" class="donate-amount-chips" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
               <button type="button" class="af-amt-btn" data-amount="1000" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">1,000</button>
               <button type="button" class="af-amt-btn" data-amount="2500" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">2,500</button>
               <button type="button" class="af-amt-btn" data-amount="5000" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">5,000</button>
               <button type="button" class="af-amt-btn" data-amount="10000" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">10,000</button>
               <button type="button" class="af-amt-btn" data-amount="25000" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">25,000</button>
+            </div>
+            <div id="donate-amount-chips-USD" class="donate-amount-chips" style="display:none;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px;">
+              <button type="button" class="af-amt-btn" data-amount="10" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">10</button>
+              <button type="button" class="af-amt-btn" data-amount="25" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">25</button>
+              <button type="button" class="af-amt-btn" data-amount="50" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">50</button>
+              <button type="button" class="af-amt-btn" data-amount="100" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">100</button>
+              <button type="button" class="af-amt-btn" data-amount="250" style="cursor:pointer;border:2px solid #17150F;background:transparent;padding:12px 6px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;">250</button>
             </div>
             <input id="donate-amount-custom" type="number" min="50" step="1" inputmode="numeric" placeholder="Or enter a custom amount" style="width:100%;padding:14px 16px;border:2px solid #17150F;background:#FFFFFF;color:#17150F;font-family:Manrope,sans-serif;font-size:15px;outline:none;">
           </div>
