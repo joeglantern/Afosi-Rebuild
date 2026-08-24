@@ -40,7 +40,7 @@ Unless otherwise stated, all content on the Site — text, graphics, logos, phot
 
 ## 6. Third-party links and platforms
 
-The Site links to independently operated platforms we build or support, including Kenya Youth Climate Hub, Afosi Hub, and Kiongozi ya Vijana, as well as to third-party sites such as our social media pages and payment processors. We do not control these third-party sites and are not responsible for their content, policies, or practices. Use of those platforms is governed by their own terms.
+The Site links to independently operated platforms we build or support, including Kenya Youth Climate Hub, Afosi Hub, and Sheria ya Vijana, as well as to third-party sites such as our social media pages and payment processors. We do not control these third-party sites and are not responsible for their content, policies, or practices. Use of those platforms is governed by their own terms.
 
 ## 7. No warranty
 

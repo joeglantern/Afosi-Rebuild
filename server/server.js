@@ -91,7 +91,7 @@ Health · Education · Environment · Livelihoods · Leadership & Governance · 
 PROGRAMS / PROJECTS
 - We Lead Project — youth leadership and empowerment.
 - Robotics & Creative Coding — STEM skills for youth, in partnership with STEM Impact Center Kenya.
-- Sheria ya Vijana — youth legal awareness and civic education; implemented in Nairobi and Kwale.
+- Sheria ya Vijana — youth legal awareness and civic education; implemented in Nairobi and Kwale, with an online arm at kiongozi.org (see Digital Platforms below).
 - The M.A.T.H Project — education program across 60 APBET schools in Kibera and Mukuru; supports ESD (Education for Sustainable Development) policy.
 - Youth Voices Lab — a 12-month program in Mukuru; part of work spanning 15 intervention countries.
 - YOMA (Youth Agency Marketplace) Projects — digital youth engagement; scaling to 69,000 youth.
@@ -101,13 +101,13 @@ PROGRAMS / PROJECTS
 DIGITAL PLATFORMS
 - Kenya Youth Climate Hub (KYCH) — kenyayouthclimatehub.org — youth climate action platform.
 - Afosi Hub — afosihub.com — startup management platform (formerly "Flare Hub"; it was rebranded to Afosi Hub).
-- Kiongozi ya Vijana — kiongozi.org — civic/leadership platform for youth aged 15–35.
+- Sheria ya Vijana — kiongozi.org — civic/leadership platform for youth aged 15–35 (the digital arm of the Sheria ya Vijana program above).
 - Kiongozi Chat — available on Google Play.
 
 TEAM
-- Board of Directors: Eva Nchogu (Board Chairperson), Winnie Osoro (Board Treasurer), Lucy Mogesi (Board Member), Anne Nderitu (Board Member).
+- Board of Directors: Eva Nchogu (Board Chairperson), Winnie Osoro (Board Treasurer), Lucy Mogesi (Board Member), Anne Nderitu (Board Member), Joshua Ongwae (Board Member).
 - Management: Eric Nyamwaro (Executive Director), Esther Mwikali (National Coordinator).
-- Core team includes: Prisca Achieng, Davin Omollo, Ivy Awuor, Felix Omondi, Magdaline Watahi, Vanessa Wambui, Fredrick Ongaki, Elisha Papa, Virginia Kerubo, Joe Liban (Software Engineer), Peter Onsomu, Elizabeth Muthoni, Titus.
+- Core team includes: Prisca Achieng, Davin Omollo, Ivy Awuor, Felix Omondi, Magdaline Watahi, Vanessa Wambui, Fredrick Ongaki, Elisha Papa, Virginia Kerubo, Joe Liban (Software Engineer), Peter Onsomu, Elizabeth Muthoni, Titus Rono.
 
 PARTNERS
 We Lead, Udada Imara, SYO, RAI, PYWV, NYECBO, Inuka, GEM Trust, Dayo, CSA.

@@ -153,7 +153,7 @@ const FOOTER_HTML = `
           <div style="display:flex;flex-direction:column;gap:13px;font-size:15px;">
             <a href="https://www.kenyayouthclimatehub.org/" target="_blank" rel="noopener" style="color:#C9C2B6;">Kenya Youth Climate Hub</a>
             <a href="https://afosihub.com/" target="_blank" rel="noopener" style="color:#C9C2B6;">Afosi Hub</a>
-            <a href="https://kiongozi.org/" target="_blank" rel="noopener" style="color:#C9C2B6;">Kiongozi ya Vijana</a>
+            <a href="https://kiongozi.org/" target="_blank" rel="noopener" style="color:#C9C2B6;">Sheria ya Vijana</a>
             <a href="/platforms.html" style="color:#C9C2B6;">All platforms</a>
           </div>
         </div>
