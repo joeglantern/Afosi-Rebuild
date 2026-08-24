@@ -210,4 +210,40 @@ a:hover { color: #F26522; }
   animation: af-shimmer 1.6s ease-in-out infinite;
   border: 2px solid rgba(23,21,15,0.1);
 }
+
+/* Team profile cards — hover affordance + click-to-reveal modal. */
+.af-team-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.af-team-frame { position: relative; overflow: hidden; transition: transform 0.4s cubic-bezier(.2,.7,.2,1), box-shadow 0.4s cubic-bezier(.2,.7,.2,1); }
+.af-team-card:hover .af-team-frame, .af-team-card:focus-visible .af-team-frame { transform: translateY(-6px); box-shadow: 8px 8px 0 #F26522; }
+.af-team-card:focus-visible .af-team-frame { outline: 2px solid #F26522; outline-offset: 3px; }
+.af-team-frame img { transition: transform 0.7s cubic-bezier(.2,.7,.2,1); }
+.af-team-card:hover .af-team-frame img, .af-team-card:focus-visible .af-team-frame img { transform: scale(1.08); }
+.af-team-veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(20,18,16,0.78) 0%, rgba(20,18,16,0) 52%); opacity: 0; transition: opacity 0.4s ease; }
+.af-team-card:hover .af-team-veil, .af-team-card:focus-visible .af-team-veil { opacity: 1; }
+.af-team-hint { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 6px; background: #F26522; color: #141210; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 10px; opacity: 0; transform: translateY(10px); transition: opacity 0.3s ease, transform 0.35s cubic-bezier(.2,.7,.2,1); }
+.af-team-card:hover .af-team-hint, .af-team-card:focus-visible .af-team-hint { opacity: 1; transform: translateY(0); }
+@media (max-width: 680px) { .af-team-hint { opacity: 1; transform: none; background: rgba(242,101,34,0.92); } }
+
+/* Team modal */
+#team-modal { position: fixed; inset: 0; z-index: 130; background: rgba(15,13,11,0.74); backdrop-filter: blur(7px); display: none; align-items: center; justify-content: center; padding: 22px; animation: af-backdrop-in 0.22s ease both; }
+#team-modal-card { animation: af-modal-in 0.4s cubic-bezier(.2,.8,.3,1.1) both; }
+
+/* Premium business card — flips on click/tap to reveal contact details. */
+@keyframes af-bcard-in { 0% { opacity: 0; transform: perspective(900px) rotateY(-10deg) translateY(12px) scale(0.94); } 100% { opacity: 1; transform: perspective(900px) rotateY(0) translateY(0) scale(1); } }
+@keyframes af-card-sheen { 0% { background-position: 150% 0; } 100% { background-position: -50% 0; } }
+.af-bcard { animation: af-bcard-in 0.6s 0.2s cubic-bezier(.2,.7,.2,1) both; perspective: 1200px; }
+.af-bcard-inner { position: relative; width: 100%; aspect-ratio: 1.72/1; transition: transform 0.7s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; cursor: pointer; }
+.af-bcard.flipped .af-bcard-inner { transform: rotateY(180deg); }
+.af-bcard-face { position: absolute; inset: 0; backface-visibility: hidden; border: 2px solid #17150F; overflow: hidden; }
+.af-bcard-face::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.4) 48%, transparent 62%); background-size: 250% 100%; background-position: 150% 0; pointer-events: none; mix-blend-mode: overlay; animation: af-card-sheen 1.4s 0.75s ease-out both; }
+.af-bcard-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  #team-modal, #team-modal-card, .af-bcard, .af-bcard-face::after { animation-duration: 0.001s !important; }
+  .af-team-frame, .af-team-frame img, .af-team-veil, .af-team-hint, .af-bcard-inner { transition-duration: 0.001s !important; }
+}
+@media (max-width: 680px) {
+  #team-modal-grid { grid-template-columns: 1fr !important; }
+  #team-modal-grid > div:first-child { min-height: 220px; }
+  #team-modal-grid > div:last-child { padding: 30px 24px 28px !important; }
+}
 @media (prefers-reduced-motion: reduce) { .af-skeleton { animation: none; } }
