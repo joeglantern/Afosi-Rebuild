@@ -145,6 +145,7 @@ const FOOTER_HTML = `
             <a href="/gallery.html" style="color:#C9C2B6;">Gallery</a>
             <a href="/opportunities.html" style="color:#C9C2B6;">Opportunities</a>
             <a href="/partners.html" style="color:#C9C2B6;">Partners</a>
+            <a href="/brochure/afosi-brochure.pdf" download style="color:#C9C2B6;">Brochure (PDF)</a>
           </div>
         </div>
         <div>
