@@ -246,4 +246,10 @@ a:hover { color: #F26522; }
   #team-modal-grid > div:first-child { min-height: 220px; }
   #team-modal-grid > div:last-child { padding: 30px 24px 28px !important; }
 }
+
+/* "Profile coming soon" state — replaces bio copy until real bios exist. */
+@keyframes af-dot-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.45; } }
+.af-comingsoon-badge { display: inline-flex; align-items: center; gap: 8px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #8A8175; }
+.af-comingsoon-dot { width: 7px; height: 7px; border-radius: 50%; background: #F26522; animation: af-dot-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .af-comingsoon-dot { animation-duration: 0.001s !important; } }
 @media (prefers-reduced-motion: reduce) { .af-skeleton { animation: none; } }
