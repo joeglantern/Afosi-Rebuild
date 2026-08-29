@@ -123,3 +123,54 @@ then `sudo nginx -t && sudo systemctl reload nginx`.
 
 `IMG_ALLOWED_HOSTS` in `.env` restricts which hostnames it will fetch from —
 only needs changing if AFOSI moves to a different Supabase project.
+
+## Opportunity applications (built-in application form)
+
+The website's built-in application form (`/apply.html`, driven by `src/apply.js`)
+submits here — `POST /applications/upload` (stage one document) then
+`POST /applications` (finalize, JSON) — instead of relying on the legacy
+`api.afosi.org/apply` route. Unlike gallery/news/project images, application
+documents (CVs, certificates, insurance proof) are **private**: they're
+written to this server's own disk under `server/uploads/applications/`
+(gitignored), never to the public Supabase Storage buckets, and are only ever
+served back out through the admin-only routes below.
+
+Route summary:
+- `POST /applications/upload` — public, one file per call (max 10 MB; PDF/PNG/JPG/DOC/DOCX), returns a staging reference.
+- `POST /applications` — public, finalizes a submission; moves staged files into their permanent folder, records metadata, emails HR (if Resend is configured).
+- `GET /applications?type=consulting&opportunity=<slug>` — **admin-only**, list/filter/categorize.
+- `GET /applications/:id` — **admin-only**, one submission's full detail.
+- `GET /applications/:id/files/:fileKey` — **admin-only**, downloads one document.
+- `PATCH /applications/:id/reviewed` — **admin-only**, marks a submission reviewed.
+
+Admin-only routes are protected by the **same JWT the ADMIN dashboard's own
+login issues** (`ADMIN/api/auth.js`) — this service verifies that token
+rather than having its own separate login. That only works if `JWT_SECRET`
+here is set to the *exact same value* as `JWT_SECRET` in the ADMIN
+dashboard's Vercel project settings. Set both, then restart:
+```bash
+sudo nano .env   # JWT_SECRET=<same long random string as ADMIN's Vercel env>
+pm2 restart afosi-chat
+```
+
+Add the nginx route on `api.afosi.org` (same server block as `/chat`/`/donate`/`/img`):
+```nginx
+location /applications {
+    proxy_pass http://127.0.0.1:8790;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    client_max_body_size 12m;  # a bit over the 10MB per-file cap
+}
+```
+then `sudo nginx -t && sudo systemctl reload nginx`.
+
+Also set `ADMIN_ORIGINS` in `.env` to the ADMIN dashboard's real deployed
+URL(s) — the admin panel calls these routes cross-origin (from
+`admin.afosi.org` to `api.afosi.org`), so its origin must be allowed.
+
+Email notifications (HR notification + applicant confirmation) are optional —
+set `RESEND_API_KEY` and `RESEND_FROM` to enable them; without a key,
+submissions still save and remain fully visible/downloadable in the admin
+dashboard, they just don't trigger an email.

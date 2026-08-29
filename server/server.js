@@ -19,6 +19,7 @@ import { dirname, join } from 'node:path';
 import * as paystack from './paystack.js';
 import * as donations from './donations-store.js';
 import { handleImgRequest } from './imgproxy.js';
+import applicationsRouter from './applications.js';
 
 // Load server/.env regardless of the process working directory (pm2, systemd, etc.)
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,13 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const AFOSI_API_URL = (process.env.AFOSI_API_URL || 'https://api.afosi.org/api').replace(/\/$/, '');
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
   'https://afosi.org,https://www.afosi.org,http://localhost:5173,http://localhost:4173')
+  .split(',').map((s) => s.trim()).filter(Boolean);
+// The admin dashboard (a separate Vercel app) needs to reach the admin-only
+// /applications/* routes below — kept as its own env/list rather than folding
+// into ALLOWED_ORIGINS so the public site's origin list stays about the
+// public site.
+const ADMIN_ORIGINS = (process.env.ADMIN_ORIGINS ||
+  'https://admin.afosi.org,http://localhost:3000,http://localhost:5174')
   .split(',').map((s) => s.trim()).filter(Boolean);
 const SITE_URL = (process.env.SITE_URL || 'https://afosi.org').replace(/\/$/, '');
 const API_URL = (process.env.API_URL || 'https://api.afosi.org').replace(/\/$/, '');
@@ -210,7 +218,11 @@ async function getLiveContext() {
 const app = express();
 app.set('trust proxy', 1); // sits behind nginx
 app.use(express.json({
-  limit: '32kb',
+  // 512kb comfortably fits an /applications submission (several long-form
+  // answers) while staying far below anything that would strain this
+  // single-process VPS service; multipart uploads (POST /applications/upload)
+  // bypass this parser entirely since their Content-Type isn't application/json.
+  limit: '512kb',
   // Paystack's webhook signature is an HMAC of the exact bytes they sent —
   // stash the raw buffer here so /donate/webhook can hash the real thing
   // instead of a re-serialized (and potentially byte-different) req.body.
@@ -220,10 +232,11 @@ app.use(
   cors({
     origin(origin, cb) {
       // Allow same-origin/no-origin (curl, health checks) and whitelisted sites.
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || ADMIN_ORIGINS.includes(origin)) return cb(null, true);
       return cb(null, false);
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -490,7 +503,36 @@ app.post('/donate/webhook', async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Opportunity applications — public submit/upload, admin-only list/download.
+// See applications.js for the full flow and its own rate limiting.
+// ---------------------------------------------------------------------------
+const applicationsUploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 40, // a single multi-document application can fire several of these
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ success: false, message: 'Too many uploads. Please wait a few minutes and try again.' }),
+});
+const applicationsSubmitLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => res.status(429).json({ success: false, message: 'Too many submissions. Please wait a few minutes and try again.' }),
+});
+app.use(
+  '/applications',
+  (req, res, next) => {
+    if (req.method === 'POST' && req.path === '/upload') return applicationsUploadLimiter(req, res, next);
+    if (req.method === 'POST' && req.path === '/') return applicationsSubmitLimiter(req, res, next);
+    next();
+  },
+  applicationsRouter
+);
+
 app.listen(PORT, HOST, () => {
   console.log(`afosi-chat listening on http://${HOST}:${PORT} (model: ${MODEL})`);
   console.log(`donations: ${paystack.configured() ? 'enabled' : 'disabled — set PAYSTACK_PUBLIC_KEY/PAYSTACK_SECRET_KEY in server/.env'}`);
+  console.log(`applications: notification email ${process.env.RESEND_API_KEY ? 'enabled' : 'disabled — set RESEND_API_KEY in server/.env (submissions still save without it)'}`);
 });

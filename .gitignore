@@ -28,3 +28,11 @@ server/img-cache/
 
 # Donation state (server/donations-store.js) — regenerated from Paystack
 server/donations-store.json
+
+# Application submissions + uploaded documents (server/applications-store.js,
+# server/applications.js) — private applicant data, never committed
+server/applications-store.json
+server/uploads/
+
+AFOSI Podcast Terms of Reference.docx
+OPEN_ENDED_DEADLINE_FEATURE.md

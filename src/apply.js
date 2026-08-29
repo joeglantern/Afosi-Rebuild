@@ -1,8 +1,13 @@
 // AFOSI opportunity application form — vanilla port of the old React
-// OpportunityApply flow. Multi-step, two variants (supplier prequalification vs
-// standard job application), file uploads to Supabase, submission emailed to HR
-// by the backend. Auto-detects the variant from the opportunity slug/title.
-import { opportunitiesAPI, applyAPI } from './api.js';
+// OpportunityApply flow. Multi-step, three variants (supplier prequalification,
+// standard job application, and per-consultancy custom forms like the ESD &
+// Climate Storytelling one below), auto-detected from the opportunity
+// slug/title. Standard + supplier submit to the legacy backend (applyAPI,
+// unchanged); custom-form variants submit to this project's own VPS service
+// (applicationsAPI) — documents land privately on the VPS's disk, not public
+// Supabase Storage, and are retrievable from the admin dashboard's
+// Applications tab.
+import { opportunitiesAPI, applyAPI, applicationsAPI } from './api.js';
 
 // ── Option data ──────────────────────────────────────────────────────────────
 const SUPPLIER_CATEGORIES = [
@@ -29,6 +34,7 @@ const GEOGRAPHIC_REGIONS = [
   'National (Kenya-wide)', 'Nairobi Region', 'Coast Region', 'Central Region', 'Western Region',
   'Nyanza Region', 'Rift Valley Region', 'Eastern Region', 'North Eastern Region',
 ];
+const YEARS_EXPERIENCE_OPTIONS = ['Less than 5 years', '5–7 years', '8–10 years', 'More than 10 years'];
 
 const esc = (s) =>
   String(s == null ? '' : s)
@@ -42,7 +48,7 @@ const REQ = '<span style="color:#F26522;">*</span>';
 // ── State ────────────────────────────────────────────────────────────────────
 const state = {
   opp: null,
-  isSupplier: false,
+  variant: 'standard', // 'standard' | 'supplier' | 'esd-storytelling'
   step: 1,
   submitting: false,
   form: {
@@ -54,13 +60,33 @@ const state = {
     bankAccountDetails: '', consentData: false, confirmTruth: false, howHeard: [], howHeardOther: '',
     applicantName: '', applicantEmail: '', applicantPhone: '', linkedinUrl: '',
     coverLetterText: '', consentJob: false, confirmTruthJob: false,
+    // ESD & Climate Storytelling Consultancy (and future custom-form variants
+    // reuse applicantName/applicantEmail/applicantPhone above for identity).
+    applicantType: 'Individual Consultant',
+    qualification: '', yearsExperience: YEARS_EXPERIENCE_OPTIONS[0],
+    podcastExperience: '', childrenYouthExperience: '', climateEsdExperience: '',
+    workSampleLink1: '', workSampleLink2: '', workSampleRoleOutputs: '',
+    methodology: '', safeguardingApproach: '', workPlan: '',
+    costPackage: '', costPlatformTools: '', costVisibility: '', costSoftware: '',
+    ref1Name: '', ref1Org: '', ref1Contact: '', ref2Name: '', ref2Org: '', ref2Contact: '',
+    declaration: false,
   },
   uploads: {}, // key → { url, name, loading, error }
 };
 
 let root;
 
-function totalSteps() { return state.isSupplier ? 5 : 3; }
+function totalSteps() {
+  if (state.variant === 'supplier') return 5;
+  if (state.variant === 'esd-storytelling') return 7;
+  return 3;
+}
+function wordCount(s) { return (String(s || '').trim().match(/\S+/g) || []).length; }
+function fmtMoney(n) { return Number(n || 0).toLocaleString('en-KE'); }
+function costTotal() {
+  return ['costPackage', 'costPlatformTools', 'costVisibility', 'costSoftware']
+    .reduce((sum, k) => sum + (Number(state.form[k]) || 0), 0);
+}
 
 // ── Field helpers ────────────────────────────────────────────────────────────
 function textField(key, label, opts = {}) {
@@ -127,10 +153,105 @@ function uploader(key, label, required) {
   );
 }
 
+function textareaField(key, label, opts = {}) {
+  const v = esc(state.form[key]);
+  const hint = opts.maxWords
+    ? `<span style="font-weight:400;color:#8A8175;text-transform:none;letter-spacing:0;font-size:12.5px;"> — max ${opts.maxWords} words</span>`
+    : '';
+  return (
+    `<div>
+       <label style="${LABEL}">${label}${hint} ${opts.required ? REQ : ''}</label>
+       ${opts.help ? `<p style="font-size:12.5px;color:#8A8175;margin:0 0 8px;">${esc(opts.help)}</p>` : ''}
+       <textarea data-field="${key}" rows="${opts.rows || 5}" placeholder="${esc(opts.placeholder || '')}" style="${INPUT}resize:vertical;">${v}</textarea>
+     </div>`
+  );
+}
+
+const COST_ROWS = [
+  ['costPackage', 'Consultancy package — design, production & dissemination support'],
+  ['costPlatformTools', 'Digital platform management tools — monthly'],
+  ['costVisibility', 'Online visibility / boosted reach support — monthly'],
+  ['costSoftware', 'Audio editing & basic design software/licensing — monthly'],
+];
+function costTable() {
+  const rowsHtml = COST_ROWS.map(([key, label]) => (
+    `<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(23,21,15,0.12);flex-wrap:wrap;">
+       <span style="font-size:14px;flex:1;min-width:220px;">${esc(label)}</span>
+       <div style="display:flex;align-items:center;gap:6px;">
+         <span style="font-family:'Space Mono',monospace;font-size:12px;color:#8A8175;">KES</span>
+         <input data-field="${key}" data-cost type="number" min="0" step="1" value="${esc(state.form[key])}" placeholder="0" style="${INPUT}width:140px;padding:8px 10px;text-align:right;">
+       </div>
+     </div>`
+  )).join('');
+  return (
+    `<div style="background:#FFFFFF;border:2px solid #17150F;padding:20px 22px;">
+       ${rowsHtml}
+       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;">
+         <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;">Total</span>
+         <span data-cost-total style="font-family:'Space Mono',monospace;font-weight:700;font-size:16px;">KES ${fmtMoney(costTotal())}</span>
+       </div>
+     </div>`
+  );
+}
+
+function referenceBlock(prefix, label) {
+  const f = (suffix, placeholder) =>
+    `<input data-field="${prefix}${suffix}" placeholder="${placeholder}" value="${esc(state.form[prefix + suffix])}" style="${INPUT}">`;
+  return (
+    `<div>
+       <label style="${LABEL}">${label} ${REQ}</label>
+       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+         ${f('Name', 'Name')}${f('Org', 'Organisation')}${f('Contact', 'Email or phone')}
+       </div>
+     </div>`
+  );
+}
+
 // ── Step markup ──────────────────────────────────────────────────────────────
 function stepMarkup() {
   const s = state.step;
-  if (state.isSupplier) {
+  if (state.variant === 'esd-storytelling') {
+    if (s === 1) return section('Section 1: Applicant Details', [
+      selectField('applicantType', 'Applicant Type', ['Individual Consultant', 'Consultancy Firm/Organisation'], { required: true }),
+      textField('applicantName', 'Full Name / Organisation Name', { required: true, placeholder: 'e.g. Jane Doe / Acme Media Ltd' }),
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${textField('applicantEmail', 'Email Address', { required: true, type: 'email', placeholder: 'you@example.com' })}${textField('applicantPhone', 'Phone Number', { required: true, type: 'tel', placeholder: '+254 700 000 000' })}</div>`,
+    ]);
+    if (s === 2) return section('Section 2: Experience & Qualifications', [
+      textField('qualification', 'Highest relevant academic/professional qualification', { required: true, placeholder: 'Qualification, field of study & institution' }),
+      selectField('yearsExperience', 'Years of relevant experience in multimedia production, storytelling or digital communications', YEARS_EXPERIENCE_OPTIONS, { required: true }),
+      textareaField('podcastExperience', 'Experience in podcast, audio production and digital storytelling', { required: true, help: 'Highlight your most relevant work and your role in the assignments.' }),
+      textareaField('childrenYouthExperience', 'Experience working with children and young people', { required: true }),
+      textareaField('climateEsdExperience', 'Experience or knowledge in climate change, environmental sustainability and/or Education for Sustainable Development (ESD)', { required: true }),
+    ]);
+    if (s === 3) return section('Section 3: Relevant Work', [
+      `<p style="font-size:13px;color:#5A5346;margin:0;">Provide links to at least two relevant previous assignments — podcast/audio production, digital storytelling, media for social change, climate/ESD content, or work involving children and young people.</p>`,
+      `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${textField('workSampleLink1', 'Work sample link 1', { required: true, type: 'url', placeholder: 'https://…' })}${textField('workSampleLink2', 'Work sample link 2', { required: true, type: 'url', placeholder: 'https://…' })}</div>`,
+      textareaField('workSampleRoleOutputs', 'Your role and key outputs in the work samples above', { required: true }),
+    ]);
+    if (s === 4) return section('Section 4: Proposed Approach', [
+      textareaField('methodology', 'How would you approach developing and producing child-led climate and ESD stories and podcasts in Kibera and/or Mukuru?', { required: true, maxWords: 500, rows: 7 }),
+      textareaField('safeguardingApproach', 'How would you ensure child safeguarding, informed consent and ethical representation throughout the storytelling and podcast production process?', { required: true, maxWords: 300, rows: 6 }),
+      textareaField('workPlan', 'Proposed work plan (Planning → Story Development → Recording → Production → Dissemination)', { required: true, maxWords: 300, rows: 6 }),
+    ]);
+    if (s === 5) return section('Section 5: Financial Proposal', [
+      `<p style="font-size:13px;color:#5A5346;margin:0;">All amounts in Kenyan Shillings (KES).</p>`,
+      costTable(),
+    ]);
+    if (s === 6) return section('Section 6: Supporting Documents & References', [
+      `<p style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:#8A8175;margin:0;">PDF, DOC, DOCX, JPG, PNG — max 10 MB each</p>`,
+      uploader('esdProfile', 'Consultant / Organisation Profile (max 3 pages)', true),
+      uploader('esdCv', 'CV(s) of Key Personnel', true),
+      uploader('esdInsurance', 'Proof of Relevant Insurance', true),
+      uploader('esdSafeguarding', 'Safeguarding / Child Protection Evidence (where applicable)', false),
+      referenceBlock('ref1', 'Reference 1'),
+      referenceBlock('ref2', 'Reference 2'),
+    ]);
+    if (s === 7) return section('Section 7: Declaration', [
+      consentBox('declaration', "I confirm that the information provided in this application is accurate and complete. I have read and agree to comply with AFOSI's applicable safeguarding, Code of Conduct, PSEAH, data protection and other relevant requirements, as well as the applicable requirements referenced in the Terms of Reference. I also confirm that I am not subject to the exclusion grounds specified in the TOR."),
+    ]);
+    return '';
+  }
+  if (state.variant === 'supplier') {
     if (s === 1) return section('Section 1: Applicant Identity', [
       textField('fullName', 'Full Name of Applicant', { required: true, placeholder: 'e.g. John Doe / Acme Services Ltd' }),
       selectField('applyingAs', 'Applying as', ['Individual Consultant', 'Registered Organization / Company', 'Both (Individual within an Organization)'], { required: true }),
@@ -196,7 +317,43 @@ function section(heading, blocks) {
 function validateStep() {
   const f = state.form, u = state.uploads, s = state.step;
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (state.isSupplier) {
+  if (state.variant === 'esd-storytelling') {
+    if (s === 1) {
+      if (!f.applicantName.trim()) return 'Full Name / Organisation Name is required.';
+      if (!f.applicantEmail.trim()) return 'Email Address is required.';
+      if (!email.test(f.applicantEmail)) return 'Enter a valid email address.';
+      if (!f.applicantPhone.trim()) return 'Phone Number is required.';
+    }
+    if (s === 2) {
+      if (!f.qualification.trim()) return 'Please state your highest relevant qualification.';
+      if (!f.podcastExperience.trim()) return 'Please describe your podcast/audio production experience.';
+      if (!f.childrenYouthExperience.trim()) return 'Please describe your experience working with children and young people.';
+      if (!f.climateEsdExperience.trim()) return 'Please describe your climate change / ESD experience.';
+    }
+    if (s === 3) {
+      if (!f.workSampleLink1.trim() || !f.workSampleLink2.trim()) return 'Please provide at least two work sample links.';
+      if (!f.workSampleRoleOutputs.trim()) return 'Please describe your role and outputs in the work samples above.';
+    }
+    if (s === 4) {
+      if (!f.methodology.trim()) return 'Please describe your proposed approach.';
+      if (wordCount(f.methodology) > 500) return 'Proposed approach must be 500 words or fewer.';
+      if (!f.safeguardingApproach.trim()) return 'Please describe your safeguarding and consent approach.';
+      if (wordCount(f.safeguardingApproach) > 300) return 'Safeguarding & consent approach must be 300 words or fewer.';
+      if (!f.workPlan.trim()) return 'Please outline your proposed work plan.';
+      if (wordCount(f.workPlan) > 300) return 'Work plan must be 300 words or fewer.';
+    }
+    if (s === 6) {
+      if (!(u.esdProfile && u.esdProfile.url)) return 'Please upload your Consultant / Organisation Profile.';
+      if (!(u.esdCv && u.esdCv.url)) return 'Please upload the CV(s) of key personnel.';
+      if (!(u.esdInsurance && u.esdInsurance.url)) return 'Please upload proof of relevant insurance.';
+      if (!f.ref1Name.trim() || !f.ref2Name.trim()) return 'Please provide both professional references.';
+    }
+    if (s === 7) {
+      if (!f.declaration) return 'You must agree to the declaration to submit.';
+    }
+    return null;
+  }
+  if (state.variant === 'supplier') {
     if (s === 1) {
       if (!f.fullName.trim()) return 'Full Name of Applicant is required.';
       if (f.applyingAs !== 'Individual Consultant' && !f.organizationName.trim()) return 'Organization / Business Name is required.';
@@ -250,7 +407,7 @@ function render() {
          <div style="border-bottom:2px solid #17150F;padding-bottom:20px;margin-bottom:24px;">
            <span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#F26522;">Online Application Form</span>
            <h1 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,3.4vw,38px);font-weight:700;line-height:1.1;margin:10px 0 6px;">${esc(opp.title)}</h1>
-           <p style="font-size:14px;color:#5A5346;margin:0;">Complete all fields below. Your submission goes directly to our HR team at <strong>careers@afosi.org</strong>.</p>
+           <p style="font-size:14px;color:#5A5346;margin:0;">Complete all fields below. Your submission${state.variant === 'esd-storytelling' ? ' and documents are securely recorded and reviewed by' : ' goes directly to'} our HR team${state.variant === 'esd-storytelling' ? '' : ' at <strong>careers@afosi.org</strong>'}.</p>
          </div>
          <div style="display:flex;align-items:center;gap:14px;margin-bottom:28px;">
            <span style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;white-space:nowrap;">Step ${state.step} of ${totalSteps()}</span>
@@ -315,6 +472,15 @@ function wire() {
       if (file) handleUpload(el.dataset.upload, file);
     });
   });
+  // Financial proposal step: update the visible total on keystroke without a
+  // full re-render (a full render() on every keystroke would drop focus/caret
+  // position, which is why plain text inputs above don't re-render either).
+  root.querySelectorAll('[data-cost]').forEach((el) => {
+    el.addEventListener('input', () => {
+      const totalEl = root.querySelector('[data-cost-total]');
+      if (totalEl) totalEl.textContent = `KES ${fmtMoney(costTotal())}`;
+    });
+  });
   const back = root.querySelector('[data-back]');
   if (back) back.addEventListener('click', () => { state.step--; render(); scrollTop(); });
   const next = root.querySelector('[data-next]');
@@ -337,7 +503,11 @@ async function handleUpload(key, file) {
   state.uploads[key] = { url: '', name: file.name, loading: true, error: null };
   render();
   try {
-    const data = await applyAPI.upload(file);
+    // Custom-form variants (e.g. esd-storytelling) upload to this project's
+    // own VPS service, which keeps documents private; standard/supplier
+    // uploads keep using the existing legacy backend, unchanged.
+    const api = state.variant === 'esd-storytelling' ? applicationsAPI : applyAPI;
+    const data = await api.upload(file);
     state.uploads[key] = { url: data.url, name: file.name, loading: false, error: null };
   } catch (err) {
     state.uploads[key] = { url: '', name: file.name, loading: false, error: err.message || 'Upload failed.' };
@@ -351,12 +521,22 @@ async function onSubmit(e) {
   if (err) { showError(err); return; }
   state.submitting = true; render();
   try {
-    const res = await applyAPI.submit({
-      opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug },
-      fields: state.form,
-      uploads: state.uploads,
-      isSupplier: state.isSupplier,
-    });
+    let res;
+    if (state.variant === 'esd-storytelling') {
+      res = await applicationsAPI.submit({
+        opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug, type: state.opp.type },
+        variant: state.variant,
+        fields: { ...state.form, totalCostKES: costTotal() },
+        uploads: state.uploads,
+      });
+    } else {
+      res = await applyAPI.submit({
+        opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug },
+        fields: state.form,
+        uploads: state.uploads,
+        isSupplier: state.variant === 'supplier',
+      });
+    }
     if (!res || !res.success) throw new Error((res && res.message) || 'Submission failed.');
     renderSuccess();
     scrollTop();
@@ -377,8 +557,18 @@ async function onSubmit(e) {
     const opp = res && res.data;
     if (!opp) { root.innerHTML = notFound(); return; }
     state.opp = opp;
+    // Variant is auto-detected from the opportunity's slug/title, same as the
+    // original supplier-vs-standard split — no per-opportunity config needed
+    // in the CMS. Add more `else if` keyword checks here as future
+    // consultancies need their own custom form.
     const hay = `${opp.slug || ''} ${opp.title || ''}`.toLowerCase();
-    state.isSupplier = hay.includes('prequalification') || hay.includes('supplier');
+    if (hay.includes('prequalification') || hay.includes('supplier')) {
+      state.variant = 'supplier';
+    } else if (hay.includes('storytelling') && (hay.includes('esd') || hay.includes('climate') || hay.includes('podcast'))) {
+      state.variant = 'esd-storytelling';
+    } else {
+      state.variant = 'standard';
+    }
     document.title = `Apply — ${opp.title} — AFOSI`;
     render();
   } catch (err) {

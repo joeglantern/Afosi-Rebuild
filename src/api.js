@@ -81,6 +81,14 @@ export const opportunitiesAPI = {
   getBySlug: (slug) => fetchAPI(`/opportunities/slug/${slug}`),
 };
 
+// ── Projects ─────────────────────────────────────────────────────────────────
+// Same content managed from the AFOSI admin dashboard's Projects tab (writes to
+// the `projects` table in Supabase; this reads it back, already ordered by
+// display_order).
+export const projectsAPI = {
+  getAll: () => fetchAPI('/projects'),
+};
+
 // ── Applications (opportunity apply flow) ────────────────────────────────────
 export const applyAPI = {
   // Upload a single document; returns { url, ... } pointing at Supabase storage.
@@ -97,4 +105,32 @@ export const applyAPI = {
   // Submit the completed application; backend emails HR via Resend.
   submit: (payload) =>
     fetchAPI('/apply', { method: 'POST', body: JSON.stringify(payload) }),
+};
+
+// ── Applications (built-in form → this project's own VPS service) ───────────
+// Same host as chat/donate/img (server/), NOT the legacy /apply backend above.
+// Documents land privately on the VPS's own disk (never public Supabase
+// Storage) and are only retrievable through the admin dashboard.
+const APPLICATIONS_URL =
+  (import.meta.env && import.meta.env.VITE_APPLICATIONS_URL) || 'https://api.afosi.org/applications';
+
+export const applicationsAPI = {
+  async upload(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetchWithRetry(`${APPLICATIONS_URL}/upload`, { method: 'POST', body: fd });
+    const data = await safeParseJSON(res);
+    if (!res.ok) throw new Error((data && data.message) || 'Upload failed.');
+    return data;
+  },
+  async submit(payload) {
+    const res = await fetchWithRetry(APPLICATIONS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await safeParseJSON(res);
+    if (!res.ok) throw new Error((data && data.message) || 'Submission failed.');
+    return data;
+  },
 };

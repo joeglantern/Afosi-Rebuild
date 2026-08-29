@@ -1,0 +1,22 @@
+{
+  "rewrites": [
+    { "source": "/api/auth/login", "destination": "/api/auth" },
+    { "source": "/api/auth/verify", "destination": "/api/auth" },
+    { "source": "/api/upload", "destination": "/api/upload" },
+    { "source": "/api/opportunities/:id/toggle", "destination": "/api/opportunities" },
+    { "source": "/api/opportunities/:id", "destination": "/api/opportunities" },
+    { "source": "/api/opportunities", "destination": "/api/opportunities" },
+    { "source": "/api/gallery/:id", "destination": "/api/gallery" },
+    { "source": "/api/gallery", "destination": "/api/gallery" },
+    { "source": "/api/news/admin/stats", "destination": "/api/news" },
+    { "source": "/api/news/admin/all", "destination": "/api/news" },
+    { "source": "/api/news/admin/:id/toggle-publish", "destination": "/api/news" },
+    { "source": "/api/news/admin/:id/toggle-featured", "destination": "/api/news" },
+    { "source": "/api/news/admin/:id", "destination": "/api/news" },
+    { "source": "/api/news/admin", "destination": "/api/news" },
+    { "source": "/api/projects/:id/toggle-featured", "destination": "/api/projects" },
+    { "source": "/api/projects/:id", "destination": "/api/projects" },
+    { "source": "/api/projects", "destination": "/api/projects" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

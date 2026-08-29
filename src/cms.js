@@ -3,7 +3,7 @@
 // selected by `body[data-cms]`:
 //   news · gallery · opportunities (list) · opp-detail
 // The application form lives in a separate module (apply.js).
-import { newsAPI, galleryAPI, opportunitiesAPI } from './api.js';
+import { newsAPI, galleryAPI, opportunitiesAPI, projectsAPI } from './api.js';
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 const esc = (s) =>
@@ -239,7 +239,9 @@ function oppCard(opp) {
   const bits = [
     opp.location && `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;background:#F26522;"></span>${esc(opp.location)}</span>`,
     opp.duration && `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;background:#8A4B2C;"></span>${esc(opp.duration)}</span>`,
-    opp.deadline && `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;background:#2E7D32;"></span>Deadline: ${esc(fmtDateLong(opp.deadline))}</span>`,
+    opp.deadline
+      ? `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;background:#2E7D32;"></span>Deadline: ${esc(fmtDateLong(opp.deadline))}</span>`
+      : `<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:6px;height:6px;background:#2E7D32;"></span>Open — No Deadline</span>`,
   ].filter(Boolean).join('');
   return (
     `<article data-reveal data-cat="${esc(opp.type || '')}" style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:30px;display:flex;justify-content:space-between;align-items:flex-start;gap:28px;flex-wrap:wrap;">
@@ -294,6 +296,74 @@ async function renderOpportunities() {
   } catch (err) {
     root.innerHTML = stateBox('Unable to load opportunities', 'Please check your connection and try again shortly.');
     console.error('[CMS] opportunities:', err);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PROJECTS
+// ═════════════════════════════════════════════════════════════════════════════
+// Cards rendered from the admin dashboard's Projects tab. The schema has no
+// category field, so (unlike Gallery/Opportunities) there's no filter bar here
+// — every project is shown, in the order set by display_order in the dashboard.
+const PROJECT_ACCENTS = [
+  { bg: '#F26522', fg: '#141210' },
+  { bg: '#141210', fg: '#F26522' },
+  { bg: '#8A4B2C', fg: '#141210' },
+  { bg: '#2E7D32', fg: '#141210' },
+];
+
+function projectCard(item, i) {
+  const accent = PROJECT_ACCENTS[i % PROJECT_ACCENTS.length];
+  const tags = (item.highlights || []).filter(Boolean).slice(0, 3);
+  const link = (item.link || '').trim();
+  const isExternal = /^https?:\/\//i.test(link);
+
+  let cta;
+  if (isExternal) {
+    cta = `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Visit platform ↗</a>`;
+  } else if (link) {
+    // Individual program subpages aren't built yet — send to the Programs
+    // overview page rather than a link that would 404.
+    cta = `<a href="/programs.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Learn more →</a>`;
+  } else {
+    cta = `<span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#B8B1A5;">Coming soon</span>`;
+  }
+
+  return (
+    `<div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;display:flex;flex-direction:column;${item.link ? '' : 'opacity:0.72;'}">
+       <div style="height:210px;overflow:hidden;position:relative;border-bottom:2px solid #17150F;">
+         <img src="${esc(imgProxy(item.image_url, 700))}" alt="${esc(item.title)}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;">
+         ${item.duration ? `<span style="position:absolute;top:14px;left:14px;background:${accent.bg};color:${accent.fg};font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:6px 10px;letter-spacing:0.08em;text-transform:uppercase;">${esc(item.duration)}</span>` : ''}
+       </div>
+       <div style="padding:26px;display:flex;flex-direction:column;flex:1;">
+         <h3 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 10px;line-height:1.1;">${esc(item.title)}</h3>
+         <p style="font-size:14.5px;color:#5A5346;margin:0 0 16px;line-height:1.55;flex:1;">${esc(item.description || item.excerpt || '')}</p>
+         ${tags.length ? `<div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:20px;">${tags.map((t) => `<span style="font-family:'Space Mono',monospace;font-size:11px;color:#5A5346;border:1px solid rgba(23,21,15,0.2);padding:5px 9px;">${esc(t)}</span>`).join('')}</div>` : ''}
+         ${item.beneficiaries ? `<div style="font-family:'Space Mono',monospace;font-size:12px;color:#8A8175;margin-bottom:14px;">◈ ${esc(item.beneficiaries)} reached</div>` : ''}
+         ${cta}
+       </div>
+     </div>`
+  );
+}
+
+async function renderProjects() {
+  const grid = document.querySelector('[data-projects-grid]');
+  if (!grid) return;
+  try {
+    const res = await projectsAPI.getAll();
+    const items = (res && res.data) || [];
+    if (!items.length) {
+      grid.style.display = 'block';
+      grid.innerHTML = stateBox('No projects yet', 'Projects published from the AFOSI dashboard will appear here.');
+      revealAll([grid.firstElementChild]);
+      return;
+    }
+    grid.innerHTML = items.map(projectCard).join('');
+    revealAll(Array.from(grid.children));
+  } catch (err) {
+    grid.style.display = 'block';
+    grid.innerHTML = stateBox('Unable to load projects', 'Please check your connection and try again shortly.');
+    console.error('[CMS] projects:', err);
   }
 }
 
@@ -461,7 +531,7 @@ function opportunityDetailHTML(opp) {
        <div style="display:flex;flex-wrap:wrap;gap:22px;font-family:'Space Mono',monospace;font-size:13px;color:#6E6559;margin-top:24px;">
          ${opp.location ? `<span>◈ ${esc(opp.location)}</span>` : ''}
          ${opp.duration ? `<span>◷ ${esc(opp.duration)}</span>` : ''}
-         ${opp.deadline ? `<span>⚑ Deadline: ${esc(fmtDateLong(opp.deadline))}</span>` : ''}
+         ${opp.deadline ? `<span>⚑ Deadline: ${esc(fmtDateLong(opp.deadline))}</span>` : `<span>⚑ Open — No Deadline</span>`}
        </div>
      </section>
 
@@ -478,7 +548,9 @@ function opportunityDetailHTML(opp) {
          <aside style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
            <div data-reveal style="background:#F26522;color:#141210;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
              <h3 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin:0 0 14px;">${isOpen ? 'Ready to apply?' : 'Opportunity closed'}</h3>
-             ${opp.deadline ? `<p style="font-size:14px;margin:0 0 20px;">Deadline: <strong>${esc(fmtDateLong(opp.deadline))}</strong></p>` : ''}
+             ${opp.deadline
+               ? `<p style="font-size:14px;margin:0 0 20px;">Deadline: <strong>${esc(fmtDateLong(opp.deadline))}</strong></p>`
+               : (isOpen ? `<p style="font-size:14px;margin:0 0 20px;">Open — No Deadline</p>` : '')}
              ${applyBtn}
              ${applyHint ? `<p style="font-size:12px;margin:16px 0 0;line-height:1.6;text-align:center;">${applyHint}</p>` : ''}
            </div>
@@ -488,7 +560,7 @@ function opportunityDetailHTML(opp) {
                ${summaryRow('Type', meta.label)}
                ${summaryRow('Location', opp.location)}
                ${summaryRow('Duration', opp.duration)}
-               ${summaryRow('Deadline', fmtDateLong(opp.deadline))}
+               ${summaryRow('Deadline', opp.deadline ? fmtDateLong(opp.deadline) : 'Open — No Deadline')}
              </div>
            </div>
          </aside>
@@ -506,4 +578,5 @@ function opportunityDetailHTML(opp) {
   else if (mode === 'gallery') renderGallery();
   else if (mode === 'opportunities') renderOpportunities();
   else if (mode === 'opp-detail') renderOpportunityDetail();
+  else if (mode === 'projects') renderProjects();
 })();
