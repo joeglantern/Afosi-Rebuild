@@ -2,12 +2,14 @@
 // OpportunityApply flow. Multi-step, three variants (supplier prequalification,
 // standard job application, and per-consultancy custom forms like the ESD &
 // Climate Storytelling one below), auto-detected from the opportunity
-// slug/title. Standard + supplier submit to the legacy backend (applyAPI,
-// unchanged); custom-form variants submit to this project's own VPS service
+// slug/title. All variants submit to this project's own VPS service
 // (applicationsAPI) — documents land privately on the VPS's disk, not public
 // Supabase Storage, and are retrievable from the admin dashboard's
-// Applications tab.
-import { opportunitiesAPI, applyAPI, applicationsAPI } from './api.js';
+// Applications tab. (The legacy api.afosi.org /apply + /apply/upload routes
+// this used to call for standard/supplier applications were found to be
+// returning 404 in production — that backend isn't in this repo, so this
+// project's own working service is now the only path for every variant.)
+import { opportunitiesAPI, applicationsAPI } from './api.js';
 
 // ── Option data ──────────────────────────────────────────────────────────────
 const SUPPLIER_CATEGORIES = [
@@ -503,11 +505,13 @@ async function handleUpload(key, file) {
   state.uploads[key] = { url: '', name: file.name, loading: true, error: null };
   render();
   try {
-    // Custom-form variants (e.g. esd-storytelling) upload to this project's
-    // own VPS service, which keeps documents private; standard/supplier
-    // uploads keep using the existing legacy backend, unchanged.
-    const api = state.variant === 'esd-storytelling' ? applicationsAPI : applyAPI;
-    const data = await api.upload(file);
+    // Every variant uploads to this project's own VPS service (private
+    // storage, admin-reviewable). The legacy /apply/upload backend this used
+    // to call for standard/supplier applications was found to be returning
+    // 404 "Route not found" in production — confirmed dead, not something
+    // this project has source access to fix — so all variants now go through
+    // the one backend that's actually working.
+    const data = await applicationsAPI.upload(file);
     state.uploads[key] = { url: data.url, name: file.name, loading: false, error: null };
   } catch (err) {
     state.uploads[key] = { url: '', name: file.name, loading: false, error: err.message || 'Upload failed.' };
@@ -521,22 +525,13 @@ async function onSubmit(e) {
   if (err) { showError(err); return; }
   state.submitting = true; render();
   try {
-    let res;
-    if (state.variant === 'esd-storytelling') {
-      res = await applicationsAPI.submit({
-        opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug, type: state.opp.type },
-        variant: state.variant,
-        fields: { ...state.form, totalCostKES: costTotal() },
-        uploads: state.uploads,
-      });
-    } else {
-      res = await applyAPI.submit({
-        opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug },
-        fields: state.form,
-        uploads: state.uploads,
-        isSupplier: state.variant === 'supplier',
-      });
-    }
+    const fields = state.variant === 'esd-storytelling' ? { ...state.form, totalCostKES: costTotal() } : state.form;
+    const res = await applicationsAPI.submit({
+      opportunity: { id: state.opp.id, title: state.opp.title, slug: state.opp.slug, type: state.opp.type },
+      variant: state.variant,
+      fields,
+      uploads: state.uploads,
+    });
     if (!res || !res.success) throw new Error((res && res.message) || 'Submission failed.');
     renderSuccess();
     scrollTop();
