@@ -489,7 +489,7 @@ const OPP_DOCS = {
   'esd-climate-storytelling-consultancy': {
     url: '/opportunity-docs/afosi-podcast-terms-of-reference.pdf',
     label: 'Terms of Reference (TOR)',
-    meta: 'PDF · 10 pages · 287 KB',
+    meta: 'PDF · 10 pages',
   },
 };
 
@@ -534,17 +534,31 @@ function opportunityDetailHTML(opp) {
   // link, which also gives it a full-width tap target on a phone.
   const doc = opportunityDoc(opp);
   const docBlock = doc
-    ? `<a data-reveal href="${esc(doc.url)}" download class="af-opp-doc" style="display:flex;align-items:center;gap:18px;margin-top:28px;max-width:560px;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:20px 22px;text-decoration:none;color:#17150F;">
+    ? `<a data-reveal href="${esc(doc.url)}" target="_blank" rel="noopener" class="af-opp-doc" style="display:flex;align-items:center;gap:18px;margin-top:28px;max-width:560px;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:20px 22px;text-decoration:none;color:#17150F;">
          <span class="af-opp-doc-icon" style="flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:#F26522;border:2px solid #17150F;">
            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#141210" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
          </span>
          <span style="flex:1;min-width:0;">
-           <span style="display:block;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#8A8175;">Download</span>
+           <span style="display:block;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#8A8175;">Read the</span>
            <span class="af-opp-doc-title" style="display:block;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;line-height:1.25;margin-top:4px;">${esc(doc.label)}</span>
            <span style="display:block;font-family:'Space Mono',monospace;font-size:11.5px;color:#6E6559;margin-top:5px;">${esc(doc.meta)}</span>
          </span>
-         <svg class="af-opp-doc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17150F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 3v13m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
+         <svg class="af-opp-doc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17150F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
        </a>`
+    : '';
+
+  // The document itself, embedded so nobody has to leave the page to read it.
+  // Mobile browsers either refuse to render a PDF in an iframe or reduce it to
+  // a single unusable page, so below 980px this is hidden by CSS and the hero
+  // card is the way in.
+  const docViewer = doc
+    ? `<div data-reveal class="af-opp-doc-viewer" style="margin-top:44px;">
+         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+           <h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin:0;">${esc(doc.label)}</h2>
+           <a href="${esc(doc.url)}" target="_blank" rel="noopener" style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#F26522;">Open full screen ↗</a>
+         </div>
+         <iframe src="${esc(doc.url)}#view=FitH" title="${esc(doc.label)}" loading="lazy" style="display:block;width:100%;height:760px;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;background:#FFFFFF;"></iframe>
+       </div>`
     : '';
 
   const summaryRow = (label, val) =>
@@ -580,6 +594,7 @@ function opportunityDetailHTML(opp) {
        <div class="af-opp-grid" style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
          <div class="af-opp-main">
            ${body}
+           ${docViewer}
            <div data-reveal style="margin-top:36px;background:#141210;color:#F2EDE4;padding:26px;display:flex;gap:16px;align-items:flex-start;">
              <span style="font-size:24px;line-height:1;">🛡</span>
              <p style="font-size:13.5px;color:#B8B1A5;line-height:1.7;margin:0;"><strong style="color:#F2EDE4;">Safeguarding:</strong> AFOSI has zero tolerance of abuse and exploitation of vulnerable people. All employees and volunteers are expected to protect children, young people and vulnerable adults from harm and to abide by our safeguarding policy.</p>
