@@ -7,7 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const JWT_SECRET = process.env.JWT_SECRET || 'afosi-ngo-super-secret-jwt-key-2026';
+// No fallback secret. A default committed to the repo is a publicly known
+// signing key: anyone who can read the source can mint a valid admin token.
+// Missing config now fails closed instead of silently trusting it.
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -25,6 +28,10 @@ export default async function handler(req, res) {
   // ── POST /api/auth/login ──────────────────────────────────────────────────
   if (req.method === 'POST' && url.includes('/login')) {
     try {
+      if (!JWT_SECRET) {
+        console.error('[auth] JWT_SECRET is not set; refusing to issue tokens.');
+        return res.status(500).json({ success: false, message: 'Server auth is not configured.' });
+      }
       const { email, password } = req.body;
 
       if (!email || !password) {
@@ -81,6 +88,9 @@ export default async function handler(req, res) {
 
   // ── GET /api/auth/verify ──────────────────────────────────────────────────
   if (req.method === 'GET' && url.includes('/verify')) {
+    if (!JWT_SECRET) {
+      return res.status(500).json({ success: false, message: 'Server auth is not configured.' });
+    }
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       return res.status(401).json({ success: false, message: 'No token provided' });

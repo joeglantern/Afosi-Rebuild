@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { applyCors, requireAdmin, requireAdminForWrites } from './_auth.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -6,15 +7,10 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (applyCors(req, res)) return;
+  // Reads stay public (the website consumes this same content); anything
+  // that writes to Supabase with the service key needs a valid admin token.
+  if (requireAdminForWrites(req, res)) return;
 
   // Parse the URL path to extract segments
   // e.g. /api/news/admin/all  →  ['admin', 'all']
@@ -32,6 +28,10 @@ export default async function handler(req, res) {
   const isAdmin = segments[0] === 'admin';
   const secondSeg = segments[1]; // 'all', 'stats', or an ID
   const action = segments[2];    // 'toggle-publish', 'toggle-featured', or undefined
+
+  // Everything under /api/news/admin/* exposes unpublished drafts and
+  // stats, so those reads need a token too, not just the writes above.
+  if (isAdmin && requireAdmin(req, res)) return;
 
   try {
     // ── GET /api/news/admin/stats ─────────────────────────────────────────

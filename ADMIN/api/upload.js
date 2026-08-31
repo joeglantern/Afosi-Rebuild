@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { applyCors, requireAdmin } from './_auth.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,23 +16,15 @@ export const config = {
 };
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
-  );
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (applyCors(req, res, 'POST,OPTIONS')) return;
 
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, message: 'Method not allowed' });
   }
+
+  // This writes straight into Supabase Storage with the service key. Left
+  // open it is an anonymous 100MB file-upload endpoint on AFOSI's account.
+  if (requireAdmin(req, res)) return;
 
   try {
     const { file, fileName, fileType } = req.body;

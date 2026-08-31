@@ -33,7 +33,10 @@ const APPLICATIONS_DIR = join(UPLOADS_ROOT, 'applications');
 fs.mkdirSync(PENDING_DIR, { recursive: true });
 fs.mkdirSync(APPLICATIONS_DIR, { recursive: true });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'afosi-ngo-super-secret-jwt-key-2026';
+// No fallback secret. A default committed to the repo is a publicly known
+// signing key: anyone who can read the source can mint a valid admin token.
+// Missing config now fails closed instead of silently trusting it.
+const JWT_SECRET = process.env.JWT_SECRET;
 const HR_EMAIL = process.env.HR_EMAIL || 'careers@afosi.org';
 const ADMIN_DASHBOARD_URL = process.env.ADMIN_DASHBOARD_URL || 'https://admin.afosi.org';
 const AFOSI_API_URL = (process.env.AFOSI_API_URL || 'https://api.afosi.org/api').replace(/\/$/, '');
@@ -69,6 +72,10 @@ function extOf(name) {
 
 // ── Admin auth ───────────────────────────────────────────────────────────────
 function requireAdmin(req, res, next) {
+  if (!JWT_SECRET) {
+    console.error('[applications] JWT_SECRET is not set; refusing admin access.');
+    return res.status(500).json({ success: false, message: 'Server auth is not configured.' });
+  }
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
   try {
