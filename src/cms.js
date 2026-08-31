@@ -520,14 +520,14 @@ function opportunityDetailHTML(opp) {
 
   return (
     `<!-- HERO -->
-     <section data-section style="max-width:1320px;margin:0 auto;padding:48px 40px 20px;">
+     <section data-section class="af-opp-hero" style="max-width:1320px;margin:0 auto;padding:48px 40px 20px;">
        <a href="/opportunities.html" style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:26px;">← Back to Opportunities</a>
        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
          <span style="background:${meta.color};color:#141210;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:6px 12px;letter-spacing:0.08em;text-transform:uppercase;">${esc(meta.label)}</span>
          <span style="background:${isOpen ? '#2E7D32' : '#B23A2E'};color:#FBF6EE;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:6px 12px;letter-spacing:0.08em;text-transform:uppercase;">${isOpen ? 'Open' : 'Closed'}</span>
        </div>
-       <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,66px);line-height:1.04;letter-spacing:-0.02em;margin:0;max-width:900px;">${esc(opp.title)}</h1>
-       <p style="font-size:19px;line-height:1.6;color:#5A5346;margin:22px 0 0;max-width:720px;">${esc(opp.description || '')}</p>
+       <h1 class="af-opp-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,66px);line-height:1.04;letter-spacing:-0.02em;margin:0;max-width:900px;">${esc(opp.title)}</h1>
+       <p class="af-opp-lede" style="font-size:19px;line-height:1.6;color:#5A5346;margin:22px 0 0;max-width:720px;">${esc(opp.description || '')}</p>
        <div style="display:flex;flex-wrap:wrap;gap:22px;font-family:'Space Mono',monospace;font-size:13px;color:#6E6559;margin-top:24px;">
          ${opp.location ? `<span>◈ ${esc(opp.location)}</span>` : ''}
          ${opp.duration ? `<span>◷ ${esc(opp.duration)}</span>` : ''}
@@ -536,16 +536,16 @@ function opportunityDetailHTML(opp) {
      </section>
 
      <!-- BODY -->
-     <section data-section style="max-width:1320px;margin:0 auto;padding:50px 40px 100px;">
-       <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
-         <div>
+     <section data-section class="af-opp-body" style="max-width:1320px;margin:0 auto;padding:50px 40px 100px;">
+       <div class="af-opp-grid" style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
+         <div class="af-opp-main">
            ${body}
            <div data-reveal style="margin-top:36px;background:#141210;color:#F2EDE4;padding:26px;display:flex;gap:16px;align-items:flex-start;">
              <span style="font-size:24px;line-height:1;">🛡</span>
              <p style="font-size:13.5px;color:#B8B1A5;line-height:1.7;margin:0;"><strong style="color:#F2EDE4;">Safeguarding:</strong> AFOSI has zero tolerance of abuse and exploitation of vulnerable people. All employees and volunteers are expected to protect children, young people and vulnerable adults from harm and to abide by our safeguarding policy.</p>
            </div>
          </div>
-         <aside style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
+         <aside class="af-opp-aside" style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
            <div data-reveal style="background:#F26522;color:#141210;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
              <h3 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin:0 0 14px;">${isOpen ? 'Ready to apply?' : 'Opportunity closed'}</h3>
              ${opp.deadline

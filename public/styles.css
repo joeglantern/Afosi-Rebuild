@@ -253,3 +253,38 @@ a:hover { color: #F26522; }
 .af-comingsoon-dot { width: 7px; height: 7px; border-radius: 50%; background: #F26522; animation: af-dot-pulse 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .af-comingsoon-dot { animation-duration: 0.001s !important; } }
 @media (prefers-reduced-motion: reduce) { .af-skeleton { animation: none; } }
+
+/* ── Opportunity detail ─────────────────────────────────────────────────────
+   The detail page (opportunity.html, rendered by src/cms.js) is a 1.7fr/1fr
+   split with a sticky apply rail. Neither collapsed on narrow screens, so the
+   sidebar squeezed the description into a few words per line and the sticky
+   rail ate vertical space it could not spare. Long CMS copy can also carry
+   unbroken URLs, hence the wrap rule. */
+.af-opp-main { min-width: 0; }
+.af-opp-main, .af-opp-lede { overflow-wrap: break-word; }
+
+@media (max-width: 980px) {
+  .af-opp-grid { grid-template-columns: 1fr !important; gap: 34px !important; }
+  /* Sticky only makes sense beside the content, not stacked above/below it. */
+  .af-opp-aside { position: static !important; top: auto !important; }
+  .af-opp-hero { padding: 40px 28px 16px !important; }
+  .af-opp-body { padding: 38px 28px 80px !important; }
+}
+
+@media (max-width: 680px) {
+  .af-opp-hero { padding: 30px 20px 12px !important; }
+  .af-opp-body { padding: 30px 20px 70px !important; }
+  .af-opp-title { font-size: clamp(28px, 8.5vw, 40px) !important; }
+  .af-opp-lede { font-size: 16.5px !important; margin-top: 18px !important; }
+  /* The offset hard shadow is a desktop flourish; at this width it just
+     pushes the cards off-centre inside their own column. */
+  .af-opp-aside > div { padding: 22px 20px !important; box-shadow: 5px 5px 0 #17150F !important; }
+  .af-opp-main [style*="padding:50px 30px"] { padding: 34px 22px !important; }
+  .af-opp-main [style*="padding:26px"] { padding: 20px !important; }
+}
+
+@media (max-width: 420px) {
+  .af-opp-hero { padding-left: 16px !important; padding-right: 16px !important; }
+  .af-opp-body { padding-left: 16px !important; padding-right: 16px !important; }
+  .af-opp-aside > div { box-shadow: 4px 4px 0 #17150F !important; }
+}
