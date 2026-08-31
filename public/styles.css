@@ -288,3 +288,23 @@ a:hover { color: #F26522; }
   .af-opp-body { padding-left: 16px !important; padding-right: 16px !important; }
   .af-opp-aside > div { box-shadow: 4px 4px 0 #17150F !important; }
 }
+
+/* The TOR / supporting-document card in the opportunity hero. Its hover state
+   inverts to ink like the rest of the paper cards, so the icon square and the
+   download arrow have to follow the foreground. */
+.af-opp-doc { transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.af-opp-doc:hover { background: #17150F !important; color: #FBF6EE !important; box-shadow: 10px 10px 0 #F26522 !important; }
+.af-opp-doc:hover .af-opp-doc-arrow { stroke: #F26522; }
+.af-opp-doc:hover .af-opp-doc-icon { border-color: #FBF6EE; }
+
+@media (max-width: 680px) {
+  .af-opp-doc { max-width: none !important; gap: 14px !important; padding: 16px 16px !important; margin-top: 22px !important; box-shadow: 5px 5px 0 #17150F !important; }
+  .af-opp-doc-icon { width: 40px !important; height: 40px !important; }
+  .af-opp-doc-title { font-size: 15.5px !important; }
+  .af-opp-doc:hover { box-shadow: 5px 5px 0 #17150F !important; }
+}
+
+@media (max-width: 420px) {
+  .af-opp-doc { box-shadow: 4px 4px 0 #17150F !important; }
+  .af-opp-doc:hover { box-shadow: 4px 4px 0 #17150F !important; }
+}

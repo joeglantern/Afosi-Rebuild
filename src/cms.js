@@ -480,6 +480,27 @@ function detailError() {
   );
 }
 
+// Supporting documents (TOR, concept notes) for an opportunity. The CMS has no
+// file field on the opportunities table yet, so documents ship as static files
+// from public/opportunity-docs and are mapped to a slug here. If the dashboard
+// ever gains a document field the record wins and this map becomes the
+// fallback, so nothing has to change here again.
+const OPP_DOCS = {
+  'esd-climate-storytelling-consultancy': {
+    url: '/opportunity-docs/afosi-podcast-terms-of-reference.pdf',
+    label: 'Terms of Reference (TOR)',
+    meta: 'PDF · 10 pages · 287 KB',
+  },
+};
+
+function opportunityDoc(opp) {
+  const fromCms = opp.tor_url || opp.document_url || opp.attachment_url;
+  if (fromCms && String(fromCms).trim()) {
+    return { url: String(fromCms).trim(), label: 'Terms of Reference (TOR)', meta: 'PDF' };
+  }
+  return OPP_DOCS[opp.slug] || null;
+}
+
 function opportunityDetailHTML(opp) {
   const meta = TYPE_META[opp.type] || { label: opp.type || 'Opportunity', color: '#17150F' };
   const closed = opp.manually_disabled || isDeadlinePassed(opp.deadline);
@@ -508,6 +529,24 @@ function opportunityDetailHTML(opp) {
           : `Click <strong>Apply Now</strong> to open the online application form.`)
     : '';
 
+  // Applicants need the TOR before they can apply, so it sits in the hero next
+  // to the deadline rather than buried in the body copy. The whole card is the
+  // link, which also gives it a full-width tap target on a phone.
+  const doc = opportunityDoc(opp);
+  const docBlock = doc
+    ? `<a data-reveal href="${esc(doc.url)}" download class="af-opp-doc" style="display:flex;align-items:center;gap:18px;margin-top:28px;max-width:560px;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:20px 22px;text-decoration:none;color:#17150F;">
+         <span class="af-opp-doc-icon" style="flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:#F26522;border:2px solid #17150F;">
+           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#141210" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+         </span>
+         <span style="flex:1;min-width:0;">
+           <span style="display:block;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#8A8175;">Download</span>
+           <span class="af-opp-doc-title" style="display:block;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;line-height:1.25;margin-top:4px;">${esc(doc.label)}</span>
+           <span style="display:block;font-family:'Space Mono',monospace;font-size:11.5px;color:#6E6559;margin-top:5px;">${esc(doc.meta)}</span>
+         </span>
+         <svg class="af-opp-doc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17150F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M12 3v13m0 0l-5-5m5 5l5-5M4 21h16"/></svg>
+       </a>`
+    : '';
+
   const summaryRow = (label, val) =>
     val ? `<div><span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8175;">${esc(label)}</span><p style="margin:3px 0 0;font-weight:600;color:#17150F;">${esc(val)}</p></div>` : '';
 
@@ -533,6 +572,7 @@ function opportunityDetailHTML(opp) {
          ${opp.duration ? `<span>◷ ${esc(opp.duration)}</span>` : ''}
          ${opp.deadline ? `<span>⚑ Deadline: ${esc(fmtDateLong(opp.deadline))}</span>` : `<span>⚑ Open — No Deadline</span>`}
        </div>
+       ${docBlock}
      </section>
 
      <!-- BODY -->
