@@ -33,13 +33,19 @@ const APPLICATIONS_DIR = join(UPLOADS_ROOT, 'applications');
 fs.mkdirSync(PENDING_DIR, { recursive: true });
 fs.mkdirSync(APPLICATIONS_DIR, { recursive: true });
 
-// No fallback secret. A default committed to the repo is a publicly known
-// signing key: anyone who can read the source can mint a valid admin token.
-// Missing config now fails closed instead of silently trusting it.
-const JWT_SECRET = process.env.JWT_SECRET;
-const HR_EMAIL = process.env.HR_EMAIL || 'careers@afosi.org';
-const ADMIN_DASHBOARD_URL = process.env.ADMIN_DASHBOARD_URL || 'https://admin.afosi.org';
-const AFOSI_API_URL = (process.env.AFOSI_API_URL || 'https://api.afosi.org/api').replace(/\/$/, '');
+// These are read lazily, per request, rather than captured at module load.
+// server.js imports this file at line 22 but only calls dotenv.config() as a
+// statement further down, and ES module imports are evaluated before any
+// statement in the importing module runs. Reading process.env at the top
+// level here therefore happens before server/.env has been loaded, so every
+// value would silently be the fallback no matter what the .env file said.
+//
+// There is deliberately no fallback secret: a default committed to the repo
+// is a publicly known signing key, so missing config fails closed.
+const jwtSecret = () => process.env.JWT_SECRET;
+const hrEmail = () => process.env.HR_EMAIL || 'careers@afosi.org';
+const adminDashboardUrl = () => process.env.ADMIN_DASHBOARD_URL || 'https://admin.afosi.org';
+const afosiApiUrl = () => (process.env.AFOSI_API_URL || 'https://api.afosi.org/api').replace(/\/$/, '');
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB — matches the client-side cap in apply.js
 const ALLOWED_EXT = new Set(['.pdf', '.png', '.jpg', '.jpeg', '.doc', '.docx']);
 
@@ -72,14 +78,15 @@ function extOf(name) {
 
 // ── Admin auth ───────────────────────────────────────────────────────────────
 function requireAdmin(req, res, next) {
-  if (!JWT_SECRET) {
+  const secret = jwtSecret();
+  if (!secret) {
     console.error('[applications] JWT_SECRET is not set; refusing admin access.');
     return res.status(500).json({ success: false, message: 'Server auth is not configured.' });
   }
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
   try {
-    req.admin = jwt.verify(token, JWT_SECRET);
+    req.admin = jwt.verify(token, secret);
     next();
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid or expired token' });
@@ -124,7 +131,7 @@ async function fetchJSON(url) {
 async function resolveOpportunity(clientOpp) {
   const slug = clientOpp && clientOpp.slug;
   if (slug) {
-    const json = await fetchJSON(`${AFOSI_API_URL}/opportunities/slug/${encodeURIComponent(slug)}`);
+    const json = await fetchJSON(`${afosiApiUrl()}/opportunities/slug/${encodeURIComponent(slug)}`);
     const opp = json && json.data;
     if (opp) {
       return { id: opp.id, title: opp.title, slug: opp.slug, type: opp.type || 'employment' };
@@ -180,14 +187,14 @@ async function sendEmails(entry) {
   try {
     await resend.emails.send({
       from: fromAddr,
-      to: HR_EMAIL,
+      to: hrEmail(),
       subject: `New application: ${entry.opportunity.title} — ${identity.name}`,
       text:
         `A new application was submitted for "${entry.opportunity.title}" (${entry.opportunity.type}).\n\n` +
         `Applicant: ${identity.name}\nEmail: ${identity.email}\nPhone: ${identity.phone}\n\n` +
         `Documents:\n${fileLines}\n\n` +
         `Full answers:\n${fieldLines}\n\n` +
-        `Open, review and download documents in the admin dashboard: ${ADMIN_DASHBOARD_URL}`,
+        `Open, review and download documents in the admin dashboard: ${adminDashboardUrl()}`,
     });
   } catch (e) {
     console.error('[applications] HR notification email failed:', e.message);
