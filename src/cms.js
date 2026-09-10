@@ -189,7 +189,7 @@ function galleryItem(item, i) {
   return (
     `<div data-reveal data-cat="${esc(cat)}" data-lightbox="${esc(imgProxy(url, 1400))}" style="position:relative;cursor:zoom-in;overflow:hidden;border:2px solid #17150F;${span ? 'grid-row:span 2;' : ''}break-inside:avoid;">
        <img src="${esc(imgProxy(url, 500))}" alt="${esc(label)}" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;min-height:${minH}px;object-fit:cover;transition:transform 0.5s ease;">
-       <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:16px;background:linear-gradient(to top,rgba(20,18,16,0.75),transparent 55%);opacity:0;transition:opacity 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#F26522;padding:5px 10px;color:#141210;">${esc(cat)}</span></div>
+       <div class="af-gal-cap" style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:16px;background:linear-gradient(to top,rgba(20,18,16,0.75),transparent 55%);opacity:0;transition:opacity 0.3s;"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#F26522;padding:5px 10px;color:#141210;">${esc(cat)}</span></div>
      </div>`
   );
 }

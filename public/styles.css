@@ -52,6 +52,10 @@ a:hover { color: #F26522; }
 .hov-social2:hover { background: #F26522 !important; color: #141210 !important; border-color: #F26522 !important; }
 .hov-chatclose:hover { color: #FBF6EE !important; border-color: #FBF6EE !important; }
 .hov-prompt:hover { background: #F26522 !important; border-color: #F26522 !important; }
+/* Gallery caption reveal. Was an inline onmouseover/onmouseout pair; moved here
+   so script-src can drop 'unsafe-inline' in the Content-Security-Policy. The
+   overlay covers the whole card, so hovering it is hovering the card. */
+.af-gal-cap:hover { opacity: 1 !important; }
 .hov-send:hover { background: #17150F !important; }
 .hov-send:hover svg { stroke: #F26522 !important; }
 .hov-launch:hover { background: #F26522 !important; color: #141210 !important; box-shadow: 5px 5px 0 #17150F !important; }
