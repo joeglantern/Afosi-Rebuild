@@ -1,0 +1,306 @@
+{
+  "updated": "2026-09-07",
+  "count": 30,
+  "assets": [
+    {
+      "id": "AFOSI-001",
+      "tag": "AFOSI/001",
+      "name": "Photocopier Machine",
+      "description": "Kyocera KM 2560",
+      "category": "Office equipment",
+      "custodian": "Office",
+      "condition": "Bad",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-002",
+      "tag": "AFOSI/002",
+      "name": "Microwave",
+      "description": "Ramtoms Microwave",
+      "category": "Appliance",
+      "custodian": "Office",
+      "condition": "Bad",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-003",
+      "tag": "AFOSI/003",
+      "name": "Office Chair",
+      "description": "Mesh office chair",
+      "category": "Furniture",
+      "custodian": "Prisca Achieng",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-004",
+      "tag": "AFOSI/004",
+      "name": "Office Chair",
+      "description": "Mesh office chair",
+      "category": "Furniture",
+      "custodian": "Davin Omollo",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-005",
+      "tag": "AFOSI/005",
+      "name": "Office Chair",
+      "description": "Mesh office chair",
+      "category": "Furniture",
+      "custodian": "Esther Kiilu",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-006",
+      "tag": "AFOSI/006",
+      "name": "Office Chair",
+      "description": "Mesh office chair",
+      "category": "Furniture",
+      "custodian": "Office",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-007",
+      "tag": "AFOSI/007",
+      "name": "Office Desk",
+      "description": "Study table",
+      "category": "Furniture",
+      "custodian": "Office",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-008",
+      "tag": "AFOSI/008",
+      "name": "Executive Office Chair",
+      "description": "Office Chair Jagger H",
+      "category": "Furniture",
+      "custodian": "Office",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-009",
+      "tag": "AFOSI/009",
+      "name": "Office Desk",
+      "description": "Study table",
+      "category": "Furniture",
+      "custodian": "Fredrick Ongaki",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-010",
+      "tag": "AFOSI/010",
+      "name": "Executive Office Chair",
+      "description": "Ergonomic headrest office chair",
+      "category": "Furniture",
+      "custodian": "Fredrick Ongaki",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-011",
+      "tag": "AFOSI/011",
+      "name": "White Glass Cabinet",
+      "description": "Wooden white cabinet",
+      "category": "Furniture",
+      "custodian": "Prisca Achieng",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-012",
+      "tag": "AFOSI/012",
+      "name": "ThinkPad Laptop",
+      "description": "Lenovo thinkpad",
+      "category": "Laptop",
+      "custodian": "Davin Omollo",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-013",
+      "tag": "AFOSI/013",
+      "name": "ThinkPad Laptop",
+      "description": "Lenovo thinkpad",
+      "category": "Laptop",
+      "custodian": "Esther Kiilu",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-014",
+      "tag": "AFOSI/014",
+      "name": "HP EliteBook Pro",
+      "description": "x360 830 G7Notebook Intel (R) Core i5",
+      "category": "Laptop",
+      "custodian": "Virginia Kerubo",
+      "condition": "Good",
+      "donor": "AFOSI/ We Lead"
+    },
+    {
+      "id": "AFOSI-015",
+      "tag": "AFOSI/015/Childfund",
+      "name": "HP Probook 440G11",
+      "description": "5CD4263Z4P",
+      "category": "Laptop",
+      "custodian": "Prisca Achieng",
+      "condition": "Good",
+      "donor": "Childfund/AFOSI"
+    },
+    {
+      "id": "AFOSI-016",
+      "tag": "AFOSI/016/Childfund",
+      "name": "HP Probook 440G11",
+      "description": "5CD4263Z9O",
+      "category": "Laptop",
+      "custodian": "Elisha Papa",
+      "condition": "Good",
+      "donor": "Childfund/AFOSI"
+    },
+    {
+      "id": "AFOSI-017",
+      "tag": "AFOSI/017",
+      "name": "HP EliteBook 830 G7",
+      "description": "Intel Core i7-10th Generation 16GB RAM 512GB SSD- Intel UHD Graphics 14.0 Inch HD Touchscreen Display",
+      "category": "Laptop",
+      "custodian": "Titus Ronoh",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-018",
+      "tag": "AFOSI/018",
+      "name": "HP EliteBook 830 G7",
+      "description": "Intel Core i7-10th Generation 16GB RAM 512GB SSD- Intel UHD Graphics 14.0 Inch HD Touchscreen Display",
+      "category": "Laptop",
+      "custodian": "Esther Kiilu",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-019",
+      "tag": "AFOSI/019",
+      "name": "HP EliteBook 830 G6",
+      "description": "HP Elitebook 830 G6 Laptop- 14.0”Intel Core i5-8250U 16GB DDR4 RAM 256GB NVMe SSD Intel UHD Graphics 620 Windows 11 Pro",
+      "category": "Laptop",
+      "custodian": "Davin Omollo",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-020",
+      "tag": "AFOSI/020",
+      "name": "HP EliteBook 830 G6",
+      "description": "HP Elitebook 830 G6 Laptop- 14.0”Intel Core i5-8250U 16GB DDR4 RAM 256GB NVMe SSD Intel UHD Graphics 620 Windows 11 Pro",
+      "category": "Laptop",
+      "custodian": "Vanessa Gathuri",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-022",
+      "tag": "AFOSI/022",
+      "name": "Lenovo Legion 5 161rx9",
+      "description": "Core i9 14th GENERATION 64GB RAM DDR5 1TB SSD Nvme pcle 4.0 16.0” WQXGA LUNA GREY COLOR NVIDIA GEFORCE RTX 4070,8GB vram",
+      "category": "Laptop",
+      "custodian": "Elisha Papa",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-023",
+      "tag": "AFOSI/023",
+      "name": "Hp EliteBook 840 G6",
+      "description": "HP Elitebook 830 G6 Laptop- 14.0” Full HD Touchscreen Display Intel Core i5-8250U 16GB DDR4 RAM 256GB NVMe SSD Intel UHD Graphics 620 Windows 11 Pro",
+      "category": "Laptop",
+      "custodian": "Fredrick Ongaki",
+      "condition": "Good",
+      "donor": "SYV"
+    },
+    {
+      "id": "AFOSI-024",
+      "tag": "AFOSI/024",
+      "name": "Vaccum cleaner",
+      "description": "Wet and dry vacuum cleaner RH SS3 Model",
+      "category": "Appliance",
+      "custodian": "Office",
+      "condition": "Bad",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-025",
+      "tag": "AFOSI/025",
+      "name": "Whiteboard",
+      "description": "90*60CM",
+      "category": "Office equipment",
+      "custodian": "Office",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-026",
+      "tag": "AFOSI/026",
+      "name": "HP Specture",
+      "description": "Helwett pachard Prox360G2, core i5 @CPU 2.40GHz",
+      "category": "Laptop",
+      "custodian": "Barbra Kibe",
+      "condition": "Good",
+      "donor": "AFOSI"
+    },
+    {
+      "id": "AFOSI-027",
+      "tag": "AFOSI/027",
+      "name": "HP EliteBook x360 830 G6",
+      "description": "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz (1.80 GHz)",
+      "category": "Laptop",
+      "custodian": "Prisca Achieng",
+      "condition": "Good",
+      "donor": "MATH Project"
+    },
+    {
+      "id": "AFOSI-028",
+      "tag": "AFOSI/028",
+      "name": "HP EliteBook x360 830 G6",
+      "description": "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz (1.80 GHz)",
+      "category": "Laptop",
+      "custodian": "Ivy Omondi",
+      "condition": "Good",
+      "donor": "MATH Project"
+    },
+    {
+      "id": "AFOSI-029",
+      "tag": "AFOSI/029",
+      "name": "HP Pavillion x360 convartible",
+      "description": "Intel(R) Core(TM) i5-8265U CPU @ 1.60GHz (1.80 GHz) 11th gen",
+      "category": "Laptop",
+      "custodian": "Felix Omondi",
+      "condition": "Bad",
+      "donor": "MATH Project"
+    },
+    {
+      "id": "AFOSI-030",
+      "tag": "AFOSI/030",
+      "name": "Lenovo Legion 5 161AX10",
+      "description": "Intel(R) Core(TM) Ultra 9 275HX (2.70 GHz) Installed RAM 32.0 GB (31.4 GB usable)",
+      "category": "Laptop",
+      "custodian": "Joseph Liban",
+      "condition": "Good",
+      "donor": "MATH Project"
+    },
+    {
+      "id": "AFOSI-031",
+      "tag": "AFOSI/031",
+      "name": "Shredder",
+      "description": "Black PP Max 5 pages",
+      "category": "Office equipment",
+      "custodian": "Office",
+      "condition": "Good",
+      "donor": "MATH Project"
+    }
+  ]
+}

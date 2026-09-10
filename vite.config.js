@@ -16,6 +16,7 @@ export default defineConfig({
         opportunities: resolve(__dirname, 'opportunities.html'),
         opportunity: resolve(__dirname, 'opportunity.html'),
         apply: resolve(__dirname, 'apply.html'),
+        asset: resolve(__dirname, 'asset.html'),
         contact: resolve(__dirname, 'contact.html'),
         partners: resolve(__dirname, 'partners.html'),
         donate: resolve(__dirname, 'donate.html'),
