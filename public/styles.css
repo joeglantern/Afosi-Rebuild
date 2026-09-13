@@ -52,6 +52,10 @@ a:hover { color: #F26522; }
 .hov-social2:hover { background: #F26522 !important; color: #141210 !important; border-color: #F26522 !important; }
 .hov-chatclose:hover { color: #FBF6EE !important; border-color: #FBF6EE !important; }
 .hov-prompt:hover { background: #F26522 !important; border-color: #F26522 !important; }
+/* Gallery caption reveal. Was an inline onmouseover/onmouseout pair; moved here
+   so script-src can drop 'unsafe-inline' in the Content-Security-Policy. The
+   overlay covers the whole card, so hovering it is hovering the card. */
+.af-gal-cap:hover { opacity: 1 !important; }
 .hov-send:hover { background: #17150F !important; }
 .hov-send:hover svg { stroke: #F26522 !important; }
 .hov-launch:hover { background: #F26522 !important; color: #141210 !important; box-shadow: 5px 5px 0 #17150F !important; }
@@ -253,3 +257,69 @@ a:hover { color: #F26522; }
 .af-comingsoon-dot { width: 7px; height: 7px; border-radius: 50%; background: #F26522; animation: af-dot-pulse 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .af-comingsoon-dot { animation-duration: 0.001s !important; } }
 @media (prefers-reduced-motion: reduce) { .af-skeleton { animation: none; } }
+
+/* ── Opportunity detail ─────────────────────────────────────────────────────
+   The detail page (opportunity.html, rendered by src/cms.js) is a 1.7fr/1fr
+   split with a sticky apply rail. Neither collapsed on narrow screens, so the
+   sidebar squeezed the description into a few words per line and the sticky
+   rail ate vertical space it could not spare. Long CMS copy can also carry
+   unbroken URLs, hence the wrap rule. */
+.af-opp-main { min-width: 0; }
+.af-opp-main, .af-opp-lede { overflow-wrap: break-word; }
+
+@media (max-width: 980px) {
+  .af-opp-grid { grid-template-columns: 1fr !important; gap: 34px !important; }
+  /* Sticky only makes sense beside the content, not stacked above/below it. */
+  .af-opp-aside { position: static !important; top: auto !important; }
+  .af-opp-hero { padding: 40px 28px 16px !important; }
+  .af-opp-body { padding: 38px 28px 80px !important; }
+}
+
+@media (max-width: 680px) {
+  .af-opp-hero { padding: 30px 20px 12px !important; }
+  .af-opp-body { padding: 30px 20px 70px !important; }
+  .af-opp-title { font-size: clamp(28px, 8.5vw, 40px) !important; }
+  .af-opp-lede { font-size: 16.5px !important; margin-top: 18px !important; }
+  /* The offset hard shadow is a desktop flourish; at this width it just
+     pushes the cards off-centre inside their own column. */
+  .af-opp-aside > div { padding: 22px 20px !important; box-shadow: 5px 5px 0 #17150F !important; }
+  .af-opp-main [style*="padding:50px 30px"] { padding: 34px 22px !important; }
+  .af-opp-main [style*="padding:26px"] { padding: 20px !important; }
+}
+
+@media (max-width: 420px) {
+  .af-opp-hero { padding-left: 16px !important; padding-right: 16px !important; }
+  .af-opp-body { padding-left: 16px !important; padding-right: 16px !important; }
+  .af-opp-aside > div { box-shadow: 4px 4px 0 #17150F !important; }
+}
+
+/* The TOR / supporting-document card in the opportunity hero. Its hover state
+   inverts to ink like the rest of the paper cards, so the icon square and the
+   download arrow have to follow the foreground. */
+.af-opp-doc { transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.af-opp-doc:hover { background: #17150F !important; color: #FBF6EE !important; box-shadow: 10px 10px 0 #F26522 !important; }
+.af-opp-doc:hover .af-opp-doc-arrow { stroke: #F26522; }
+.af-opp-doc:hover .af-opp-doc-icon { border-color: #FBF6EE; }
+
+@media (max-width: 680px) {
+  .af-opp-doc { max-width: none !important; gap: 14px !important; padding: 16px 16px !important; margin-top: 22px !important; box-shadow: 5px 5px 0 #17150F !important; }
+  .af-opp-doc-icon { width: 40px !important; height: 40px !important; }
+  .af-opp-doc-title { font-size: 15.5px !important; }
+  .af-opp-doc:hover { box-shadow: 5px 5px 0 #17150F !important; }
+}
+
+@media (max-width: 420px) {
+  .af-opp-doc { box-shadow: 4px 4px 0 #17150F !important; }
+  .af-opp-doc:hover { box-shadow: 4px 4px 0 #17150F !important; }
+}
+
+/* The embedded TOR reader. Mobile browsers either refuse to render a PDF in an
+   iframe or collapse it to one unusable page, so it is desktop-only and the
+   hero card carries the link on smaller screens. */
+@media (max-width: 980px) {
+  .af-opp-doc-viewer { display: none !important; }
+}
+
+@media (max-width: 1180px) {
+  .af-opp-doc-viewer iframe { height: 620px !important; }
+}

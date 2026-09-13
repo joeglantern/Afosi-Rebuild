@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { applyCors, requireAdminForWrites } from './_auth.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -6,15 +7,10 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+  if (applyCors(req, res)) return;
+  // Reads stay public (the website consumes this same content); anything
+  // that writes to Supabase with the service key needs a valid admin token.
+  if (requireAdminForWrites(req, res)) return;
 
   // Parse path segments after /api/projects
   // e.g. /api/projects                    → []

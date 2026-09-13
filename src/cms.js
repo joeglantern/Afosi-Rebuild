@@ -189,7 +189,7 @@ function galleryItem(item, i) {
   return (
     `<div data-reveal data-cat="${esc(cat)}" data-lightbox="${esc(imgProxy(url, 1400))}" style="position:relative;cursor:zoom-in;overflow:hidden;border:2px solid #17150F;${span ? 'grid-row:span 2;' : ''}break-inside:avoid;">
        <img src="${esc(imgProxy(url, 500))}" alt="${esc(label)}" loading="lazy" decoding="async" style="display:block;width:100%;height:100%;min-height:${minH}px;object-fit:cover;transition:transform 0.5s ease;">
-       <div style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:16px;background:linear-gradient(to top,rgba(20,18,16,0.75),transparent 55%);opacity:0;transition:opacity 0.3s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#F26522;padding:5px 10px;color:#141210;">${esc(cat)}</span></div>
+       <div class="af-gal-cap" style="position:absolute;inset:0;display:flex;align-items:flex-end;padding:16px;background:linear-gradient(to top,rgba(20,18,16,0.75),transparent 55%);opacity:0;transition:opacity 0.3s;"><span style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:#F26522;padding:5px 10px;color:#141210;">${esc(cat)}</span></div>
      </div>`
   );
 }
@@ -480,6 +480,27 @@ function detailError() {
   );
 }
 
+// Supporting documents (TOR, concept notes) for an opportunity. The CMS has no
+// file field on the opportunities table yet, so documents ship as static files
+// from public/opportunity-docs and are mapped to a slug here. If the dashboard
+// ever gains a document field the record wins and this map becomes the
+// fallback, so nothing has to change here again.
+const OPP_DOCS = {
+  'esd-climate-storytelling-consultancy': {
+    url: '/opportunity-docs/afosi-podcast-terms-of-reference.pdf',
+    label: 'Terms of Reference (TOR)',
+    meta: 'PDF · 10 pages',
+  },
+};
+
+function opportunityDoc(opp) {
+  const fromCms = opp.tor_url || opp.document_url || opp.attachment_url;
+  if (fromCms && String(fromCms).trim()) {
+    return { url: String(fromCms).trim(), label: 'Terms of Reference (TOR)', meta: 'PDF' };
+  }
+  return OPP_DOCS[opp.slug] || null;
+}
+
 function opportunityDetailHTML(opp) {
   const meta = TYPE_META[opp.type] || { label: opp.type || 'Opportunity', color: '#17150F' };
   const closed = opp.manually_disabled || isDeadlinePassed(opp.deadline);
@@ -508,6 +529,38 @@ function opportunityDetailHTML(opp) {
           : `Click <strong>Apply Now</strong> to open the online application form.`)
     : '';
 
+  // Applicants need the TOR before they can apply, so it sits in the hero next
+  // to the deadline rather than buried in the body copy. The whole card is the
+  // link, which also gives it a full-width tap target on a phone.
+  const doc = opportunityDoc(opp);
+  const docBlock = doc
+    ? `<a data-reveal href="${esc(doc.url)}" target="_blank" rel="noopener" class="af-opp-doc" style="display:flex;align-items:center;gap:18px;margin-top:28px;max-width:560px;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:20px 22px;text-decoration:none;color:#17150F;">
+         <span class="af-opp-doc-icon" style="flex:none;display:flex;align-items:center;justify-content:center;width:46px;height:46px;background:#F26522;border:2px solid #17150F;">
+           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#141210" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+         </span>
+         <span style="flex:1;min-width:0;">
+           <span style="display:block;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#8A8175;">Read the</span>
+           <span class="af-opp-doc-title" style="display:block;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;line-height:1.25;margin-top:4px;">${esc(doc.label)}</span>
+           <span style="display:block;font-family:'Space Mono',monospace;font-size:11.5px;color:#6E6559;margin-top:5px;">${esc(doc.meta)}</span>
+         </span>
+         <svg class="af-opp-doc-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#17150F" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+       </a>`
+    : '';
+
+  // The document itself, embedded so nobody has to leave the page to read it.
+  // Mobile browsers either refuse to render a PDF in an iframe or reduce it to
+  // a single unusable page, so below 980px this is hidden by CSS and the hero
+  // card is the way in.
+  const docViewer = doc
+    ? `<div data-reveal class="af-opp-doc-viewer" style="margin-top:44px;">
+         <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;">
+           <h2 style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;margin:0;">${esc(doc.label)}</h2>
+           <a href="${esc(doc.url)}" target="_blank" rel="noopener" style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#F26522;">Open full screen ↗</a>
+         </div>
+         <iframe src="${esc(doc.url)}#view=FitH" title="${esc(doc.label)}" loading="lazy" style="display:block;width:100%;height:760px;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;background:#FFFFFF;"></iframe>
+       </div>`
+    : '';
+
   const summaryRow = (label, val) =>
     val ? `<div><span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8175;">${esc(label)}</span><p style="margin:3px 0 0;font-weight:600;color:#17150F;">${esc(val)}</p></div>` : '';
 
@@ -520,32 +573,34 @@ function opportunityDetailHTML(opp) {
 
   return (
     `<!-- HERO -->
-     <section data-section style="max-width:1320px;margin:0 auto;padding:48px 40px 20px;">
+     <section data-section class="af-opp-hero" style="max-width:1320px;margin:0 auto;padding:48px 40px 20px;">
        <a href="/opportunities.html" style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:26px;">← Back to Opportunities</a>
        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
          <span style="background:${meta.color};color:#141210;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:6px 12px;letter-spacing:0.08em;text-transform:uppercase;">${esc(meta.label)}</span>
          <span style="background:${isOpen ? '#2E7D32' : '#B23A2E'};color:#FBF6EE;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:6px 12px;letter-spacing:0.08em;text-transform:uppercase;">${isOpen ? 'Open' : 'Closed'}</span>
        </div>
-       <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,66px);line-height:1.04;letter-spacing:-0.02em;margin:0;max-width:900px;">${esc(opp.title)}</h1>
-       <p style="font-size:19px;line-height:1.6;color:#5A5346;margin:22px 0 0;max-width:720px;">${esc(opp.description || '')}</p>
+       <h1 class="af-opp-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,66px);line-height:1.04;letter-spacing:-0.02em;margin:0;max-width:900px;">${esc(opp.title)}</h1>
+       <p class="af-opp-lede" style="font-size:19px;line-height:1.6;color:#5A5346;margin:22px 0 0;max-width:720px;">${esc(opp.description || '')}</p>
        <div style="display:flex;flex-wrap:wrap;gap:22px;font-family:'Space Mono',monospace;font-size:13px;color:#6E6559;margin-top:24px;">
          ${opp.location ? `<span>◈ ${esc(opp.location)}</span>` : ''}
          ${opp.duration ? `<span>◷ ${esc(opp.duration)}</span>` : ''}
          ${opp.deadline ? `<span>⚑ Deadline: ${esc(fmtDateLong(opp.deadline))}</span>` : `<span>⚑ Open — No Deadline</span>`}
        </div>
+       ${docBlock}
      </section>
 
      <!-- BODY -->
-     <section data-section style="max-width:1320px;margin:0 auto;padding:50px 40px 100px;">
-       <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
-         <div>
+     <section data-section class="af-opp-body" style="max-width:1320px;margin:0 auto;padding:50px 40px 100px;">
+       <div class="af-opp-grid" style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
+         <div class="af-opp-main">
            ${body}
+           ${docViewer}
            <div data-reveal style="margin-top:36px;background:#141210;color:#F2EDE4;padding:26px;display:flex;gap:16px;align-items:flex-start;">
              <span style="font-size:24px;line-height:1;">🛡</span>
              <p style="font-size:13.5px;color:#B8B1A5;line-height:1.7;margin:0;"><strong style="color:#F2EDE4;">Safeguarding:</strong> AFOSI has zero tolerance of abuse and exploitation of vulnerable people. All employees and volunteers are expected to protect children, young people and vulnerable adults from harm and to abide by our safeguarding policy.</p>
            </div>
          </div>
-         <aside style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
+         <aside class="af-opp-aside" style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
            <div data-reveal style="background:#F26522;color:#141210;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
              <h3 style="font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;margin:0 0 14px;">${isOpen ? 'Ready to apply?' : 'Opportunity closed'}</h3>
              ${opp.deadline
