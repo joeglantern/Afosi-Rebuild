@@ -317,20 +317,18 @@ function projectCard(item, i) {
   const tags = (item.highlights || []).filter(Boolean).slice(0, 3);
   const link = (item.link || '').trim();
   const isExternal = /^https?:\/\//i.test(link);
-
-  let cta;
-  if (isExternal) {
-    cta = `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Visit platform ↗</a>`;
-  } else if (link) {
-    // Individual program subpages aren't built yet — send to the Programs
-    // overview page rather than a link that would 404.
-    cta = `<a href="/programs.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Learn more →</a>`;
-  } else {
-    cta = `<span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#B8B1A5;">Coming soon</span>`;
-  }
+  // Every project gets its own detail page now (project.html?slug=…), fetched
+  // straight from the CMS — this is what previously fell back to a shared
+  // /programs.html link, making every card look like it led to the same
+  // place. An absolute external link (e.g. a live platform like Forest
+  // Explorer) still goes straight out instead.
+  const detailHref = `/project.html?slug=${encodeURIComponent(item.slug || item.id)}`;
+  const cta = isExternal
+    ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Visit platform ↗</a>`
+    : `<a href="${esc(detailHref)}" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#17150F;border-bottom:2px solid #F26522;padding-bottom:2px;align-self:flex-start;">Learn more →</a>`;
 
   return (
-    `<div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;display:flex;flex-direction:column;${item.link ? '' : 'opacity:0.72;'}">
+    `<div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;display:flex;flex-direction:column;">
        <div style="height:210px;overflow:hidden;position:relative;border-bottom:2px solid #17150F;">
          <img src="${esc(imgProxy(item.image_url, 700))}" alt="${esc(item.title)}" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;">
          ${item.duration ? `<span style="position:absolute;top:14px;left:14px;background:${accent.bg};color:${accent.fg};font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:6px 10px;letter-spacing:0.08em;text-transform:uppercase;">${esc(item.duration)}</span>` : ''}
@@ -365,6 +363,148 @@ async function renderProjects() {
     grid.innerHTML = stateBox('Unable to load projects', 'Please check your connection and try again shortly.');
     console.error('[CMS] projects:', err);
   }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// PROJECT DETAIL
+// ═════════════════════════════════════════════════════════════════════════════
+// Each project card now links here (project.html?slug=…) instead of every
+// card previously falling back to the same /programs.html URL.
+function projectSection(heading, bodyHtml) {
+  return (
+    `<div data-reveal style="margin-bottom:36px;">
+       <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px;padding-bottom:12px;border-bottom:2px solid #17150F;">
+         <h2 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0;">${esc(heading)}</h2>
+       </div>
+       ${bodyHtml}
+     </div>`
+  );
+}
+function bulletListHTML(items) {
+  return `<div style="display:flex;flex-direction:column;gap:10px;">${items.map((t) =>
+    `<div style="display:flex;align-items:flex-start;gap:12px;"><span style="width:8px;height:8px;background:#F26522;margin-top:8px;flex-shrink:0;"></span><span style="color:#5A5346;line-height:1.65;font-size:15.5px;">${esc(t)}</span></div>`
+  ).join('')}</div>`;
+}
+function paragraphsHTML(text) {
+  return String(text).split(/\n{2,}/).map((p) => `<p style="color:#5A5346;line-height:1.75;font-size:15.5px;margin:0 0 14px;">${esc(p.trim())}</p>`).join('');
+}
+
+async function renderProjectDetail() {
+  const root = document.querySelector('[data-project-detail]');
+  if (!root) return;
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('slug') || params.get('id');
+  if (!slug) { root.innerHTML = projectDetailError(); return; }
+
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+  try {
+    let res;
+    if (isUUID) {
+      res = await projectsAPI.getById(slug);
+    } else {
+      try { res = await projectsAPI.getBySlug(slug); }
+      catch { res = await projectsAPI.getById(slug); }
+    }
+    const item = res && res.data;
+    if (!item) { root.innerHTML = projectDetailError(); return; }
+    document.title = `${item.title} — AFOSI`;
+    root.innerHTML = projectDetailHTML(item);
+    revealAll(Array.from(root.querySelectorAll('[data-reveal]')));
+  } catch (err) {
+    console.error('[CMS] project detail:', err);
+    root.innerHTML = projectDetailError();
+  }
+}
+
+function projectDetailError() {
+  return (
+    `<section data-section style="max-width:1320px;margin:0 auto;padding:120px 40px;text-align:center;">
+       <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(34px,5vw,60px);margin:0 0 16px;">Project not found</h1>
+       <p style="font-size:17px;color:#5A5346;max-width:520px;margin:0 auto 28px;">This project may have been removed or the link is incorrect.</p>
+       <a href="/projects.html" class="hov-ink" style="display:inline-block;background:#F26522;color:#141210;padding:15px 30px;font-weight:700;">← Back to Projects</a>
+     </section>`
+  );
+}
+
+function projectDetailHTML(item) {
+  const link = (item.link || '').trim();
+  const isExternal = /^https?:\/\//i.test(link);
+
+  const sections = [];
+  if (item.why_it_matters) sections.push(projectSection('Why It Matters', paragraphsHTML(item.why_it_matters)));
+  if (Array.isArray(item.what_we_do) && item.what_we_do.length) sections.push(projectSection('What We Do', bulletListHTML(item.what_we_do)));
+  if (item.key_solutions) sections.push(projectSection('Key Solutions', paragraphsHTML(item.key_solutions)));
+  if (item.who_it_serves) sections.push(projectSection('Who It Serves', paragraphsHTML(item.who_it_serves)));
+  if (Array.isArray(item.impact) && item.impact.length) sections.push(projectSection('Expected Impact', bulletListHTML(item.impact)));
+
+  const body = sections.length
+    ? sections.join('')
+    : `<div data-reveal style="border:2px dashed rgba(23,21,15,0.3);background:#FFFFFF;padding:50px 30px;text-align:center;">
+         <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin-bottom:8px;">No further details yet</div>
+         <p style="font-size:14px;color:#5A5346;margin:0;">Full details for this project have not been added yet.</p>
+       </div>`;
+
+  const partners = Array.isArray(item.partners) ? item.partners.filter(Boolean) : [];
+  const highlights = Array.isArray(item.highlights) ? item.highlights.filter(Boolean) : [];
+
+  const ctaBtn = isExternal
+    ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="hov-paper" style="display:block;text-align:center;background:#FBF6EE;color:#141210;padding:16px;font-weight:700;font-size:15px;">Visit platform ↗</a>`
+    : `<a href="/contact.html" class="hov-paper" style="display:block;text-align:center;background:#FBF6EE;color:#141210;padding:16px;font-weight:700;font-size:15px;">Get involved →</a>`;
+
+  const factRow = (label, val) =>
+    val ? `<div><span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8175;">${esc(label)}</span><p style="margin:3px 0 0;font-weight:600;color:#17150F;">${esc(val)}</p></div>` : '';
+
+  return (
+    `<!-- HERO -->
+     <section data-section style="max-width:1320px;margin:0 auto;padding:48px 40px 20px;">
+       <a href="/projects.html" style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:26px;">← Back to Projects</a>
+       <h1 style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,64px);line-height:1.04;letter-spacing:-0.02em;margin:0;max-width:900px;">${esc(item.title)}</h1>
+       <p style="font-size:19px;line-height:1.6;color:#5A5346;margin:22px 0 0;max-width:760px;">${esc(item.description || item.excerpt || '')}</p>
+     </section>
+
+     ${item.image_url ? `
+     <section data-section style="max-width:1320px;margin:0 auto;padding:0 40px 20px;">
+       <div data-reveal style="border:2px solid #17150F;overflow:hidden;height:420px;">
+         <img src="${esc(imgProxy(item.image_url, 1400))}" alt="${esc(item.title)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" decoding="async">
+       </div>
+     </section>` : ''}
+
+     <!-- BODY -->
+     <section data-section style="max-width:1320px;margin:0 auto;padding:50px 40px 100px;">
+       <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:48px;align-items:start;">
+         <div>${body}</div>
+         <aside style="display:flex;flex-direction:column;gap:20px;position:sticky;top:90px;">
+           <div data-reveal style="background:#F26522;color:#141210;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
+             <h3 style="font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 14px;">Want to support this?</h3>
+             ${ctaBtn}
+           </div>
+           ${(item.duration || item.beneficiaries) ? `
+           <div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
+             <h3 style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:0 0 18px;">Quick facts</h3>
+             <div style="display:flex;flex-direction:column;gap:14px;font-size:14px;">
+               ${factRow('Duration', item.duration)}
+               ${factRow('Beneficiaries reached', item.beneficiaries)}
+             </div>
+           </div>` : ''}
+           ${highlights.length ? `
+           <div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
+             <h3 style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:0 0 16px;">Highlights</h3>
+             <div style="display:flex;flex-wrap:wrap;gap:7px;">${highlights.map((h) => `<span style="font-family:'Space Mono',monospace;font-size:11px;color:#5A5346;border:1px solid rgba(23,21,15,0.2);padding:5px 9px;">${esc(h)}</span>`).join('')}</div>
+           </div>` : ''}
+           ${partners.length ? `
+           <div data-reveal style="background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;padding:28px;">
+             <h3 style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:700;margin:0 0 16px;">Partners</h3>
+             <div style="display:flex;flex-wrap:wrap;gap:7px;">${partners.map((p) => `<span style="font-family:'Space Mono',monospace;font-size:11px;color:#5A5346;border:1px solid rgba(23,21,15,0.2);padding:5px 9px;">${esc(p)}</span>`).join('')}</div>
+           </div>` : ''}
+         </aside>
+       </div>
+       ${item.call_to_action ? `
+       <div data-reveal style="margin-top:50px;background:#141210;color:#F2EDE4;padding:40px;display:flex;justify-content:space-between;align-items:center;gap:32px;flex-wrap:wrap;">
+         <p style="font-size:17px;line-height:1.6;margin:0;max-width:760px;">${esc(item.call_to_action)}</p>
+         <a href="/contact.html" class="hov-ink" style="background:#F26522;color:#141210;padding:16px 30px;font-weight:700;font-size:15px;white-space:nowrap;">Get in touch →</a>
+       </div>` : ''}
+     </section>`
+  );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -634,4 +774,5 @@ function opportunityDetailHTML(opp) {
   else if (mode === 'opportunities') renderOpportunities();
   else if (mode === 'opp-detail') renderOpportunityDetail();
   else if (mode === 'projects') renderProjects();
+  else if (mode === 'project-detail') renderProjectDetail();
 })();

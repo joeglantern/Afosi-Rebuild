@@ -87,6 +87,8 @@ export const opportunitiesAPI = {
 // display_order).
 export const projectsAPI = {
   getAll: () => fetchAPI('/projects'),
+  getBySlug: (slug) => fetchAPI(`/projects/slug/${slug}`),
+  getById: (id) => fetchAPI(`/projects/${id}`),
 };
 
 // ── Applications (opportunity apply flow) ────────────────────────────────────
