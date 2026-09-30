@@ -88,7 +88,9 @@
 
     show(
       '<h1>' + esc(quiz.title) + '</h1>' +
-      '<p class="muted">' + esc(quiz.intro) + '</p>' +
+      // The question file's intro is written for the start of the talk.
+      '<p class="muted">' + esc(isPre ? quiz.intro
+        : 'The same questions as at the start. This time you will see the answers.') + '</p>' +
       '<label class="field">' +
         '<span class="lab">Your name, organisation or business (optional)</span>' +
         '<input id="who" type="text" maxlength="80" autocomplete="off" value="' + esc(saved) + '" placeholder="">' +
@@ -219,10 +221,14 @@
   function start() {
     var id = anonId();
 
+    var notReady = 'These questions are not ready yet. Please check back in a moment.';
     fetch('/quiz/data/' + QUIZ + '.json', { cache: 'no-cache' })
       .then(function (r) {
-        if (!r.ok) throw new Error('These questions are not ready yet. Please check back in a moment.');
-        return r.json();
+        // A missing file does not 404 here: the site answers any unknown path
+        // with its homepage and a 200. So check it is really JSON.
+        var type = r.headers.get('content-type') || '';
+        if (!r.ok || type.indexOf('json') === -1) throw new Error(notReady);
+        return r.json().catch(function () { throw new Error(notReady); });
       })
       .then(function (data) {
         quiz = data;
