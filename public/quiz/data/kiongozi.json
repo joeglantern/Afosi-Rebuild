@@ -1,0 +1,84 @@
+{
+  "id": "kiongozi",
+  "title": "Kiongozi: AI for the green digital transition",
+  "intro": "Seven quick questions. There are no wrong answers before the talk: we only want to see what changes by the end.",
+  "questions": [
+    {
+      "q": "In this talk, what does the green digital transition mean?",
+      "options": [
+        "Switching every government service to an app",
+        "Using digital tools, including AI, to help people understand and take part in building a low-carbon economy",
+        "Printing less paper in offices",
+        "Replacing public meetings with chatbots"
+      ],
+      "answer": 1,
+      "why": "It is about people as much as technology: digital tools and AI help citizens understand green policy and have their say in it."
+    },
+    {
+      "q": "You want the Kiongozi AI to answer a question in a public post. What do you do?",
+      "options": [
+        "Send the question by email",
+        "Wait for a moderator to answer",
+        "Tag @kiongozi in the post",
+        "Call a helpline"
+      ],
+      "answer": 2,
+      "why": "Mention @kiongozi in a post and the AI replies in the thread, usually within seconds."
+    },
+    {
+      "q": "When @kiongozi replies to a post, who can see the answer?",
+      "options": [
+        "Everyone who can see the post, as a reply in the thread",
+        "Only the person who asked, in a private message",
+        "Only the app's moderators",
+        "Nobody until an admin approves it"
+      ],
+      "answer": 0,
+      "why": "The answer is a public reply under the post, so everyone following the conversation learns from it."
+    },
+    {
+      "q": "A post tagging @kiongozi is written in Kiswahili. How does the AI reply?",
+      "options": [
+        "Always in English",
+        "It refuses to answer",
+        "In Kiswahili, the language of the post",
+        "With a link to a translation website"
+      ],
+      "answer": 2,
+      "why": "The AI answers in the language the post is written in, Kiswahili or English."
+    },
+    {
+      "q": "Which topics is the Kiongozi AI guide built to help with?",
+      "options": [
+        "Sports scores and betting tips",
+        "The Constitution, county devolution, civic rights and the green economy",
+        "Celebrity news",
+        "Medical diagnoses"
+      ],
+      "answer": 1,
+      "why": "The guide is briefed on the Constitution of Kenya 2010, Vision 2030, devolution, public participation and the green economy and environmental policy."
+    },
+    {
+      "q": "Which of these can you do on Kiongozi?",
+      "options": [
+        "Vote in county elections",
+        "Pay county fees and levies",
+        "Apply for government jobs directly",
+        "Post, follow people, and like, repost, reply to and bookmark posts"
+      ],
+      "answer": 3,
+      "why": "Kiongozi is a social network: a feed, posts, likes, reposts, replies, bookmarks, profiles, follows and direct messages, with the AI guide built in."
+    },
+    {
+      "q": "Why put an AI guide inside a social network, rather than only on a website?",
+      "options": [
+        "Because websites cannot show text",
+        "So people get accurate answers on green and civic policy where they already talk, and everyone in the conversation learns",
+        "So the AI can make decisions for citizens",
+        "To replace public participation forums"
+      ],
+      "answer": 1,
+      "why": "Green policy only works when people understand it and take part. Answering inside the conversation reaches people where they already are."
+    }
+  ]
+}
