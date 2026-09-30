@@ -1,0 +1,19 @@
+{
+  "name": "afosi-quiz",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pretest and post-test service for the Afosi talks. Runs as its own pm2 process on its own port, against its own Postgres database and role, so it shares nothing with the chat/donate service or any other site on the VPS.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.1",
+    "pg": "^8.13.1"
+  }
+}

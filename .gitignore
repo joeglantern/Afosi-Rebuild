@@ -37,3 +37,13 @@ server/uploads/
 AFOSI Podcast Terms of Reference.docx
 OPEN_ENDED_DEADLINE_FEATURE.md
 AFOSI- STRATEGIC OBJECTIVES.docx
+
+# Printable barcode asset tags: regenerated from public/data/assets.json by
+# tools/build-asset-tags.py, and large. The register JSON is the source of truth
+# and IS committed; these are just its output.
+asset-tags/
+AFOSI-asset-tags.zip
+
+# Quiz service: real responses and the database credentials never go in git.
+quiz-server/.env
+quiz-server/data/

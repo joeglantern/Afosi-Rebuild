@@ -1,0 +1,84 @@
+{
+  "id": "practica",
+  "title": "Practica: AI for the green digital transition",
+  "intro": "Seven quick questions. There are no wrong answers before the talk: we only want to see what changes by the end.",
+  "questions": [
+    {
+      "q": "In this talk, what does the green digital transition mean?",
+      "options": [
+        "Moving all training online and closing workshops",
+        "Using digital tools, including AI, to build the skills and systems a low-carbon economy needs",
+        "Going paperless in offices",
+        "Replacing trainers with machines"
+      ],
+      "answer": 1,
+      "why": "It is about people and skills as much as technology: digital tools and AI help train the workers a greener economy runs on."
+    },
+    {
+      "q": "Why are many green jobs, like solar installation and safe wiring, hard to train for at scale?",
+      "options": [
+        "They only need theory from books",
+        "They are learned by doing, with a trainer beside you, and trainers and workshop seats are limited",
+        "Nobody wants to do them",
+        "They can only be learned abroad"
+      ],
+      "answer": 1,
+      "why": "Hands-on skills need practice and feedback. Practica brings a coach to every learner so the scarce trainers and workshops go further."
+    },
+    {
+      "q": "A learner asks the Practica coach where something is in a lesson. What can the coach do?",
+      "options": [
+        "Only reply with text",
+        "Email the trainer",
+        "Point to the exact place on the learner's screen, and open or scroll to it",
+        "Mark the lesson as complete"
+      ],
+      "answer": 2,
+      "why": "The coach knows its tools: it can point at the page, open lessons and scroll, as well as talk and listen."
+    },
+    {
+      "q": "Who decides whether a learner is competent in a practical?",
+      "options": [
+        "The AI coach",
+        "The learner",
+        "A qualified human assessor",
+        "It is decided automatically"
+      ],
+      "answer": 2,
+      "why": "The AI never grades. It helps learners practise and collect evidence; a qualified assessor makes the competence decision."
+    },
+    {
+      "q": "A learner with low vision wants to study a lesson. Which Practica feature helps most?",
+      "options": [
+        "The practice quiz",
+        "The lesson podcast and narrated slides",
+        "The mind map",
+        "The discussion board"
+      ],
+      "answer": 1,
+      "why": "Every lesson can become a two-voice podcast and narrated slides, so learners can listen instead of read. Captions follow the voice for learners who are Deaf or hard of hearing."
+    },
+    {
+      "q": "What does the Practica coach know about a learner?",
+      "options": [
+        "Everything on their phone",
+        "Only what the learner chooses to share, which they can see word for word and switch off",
+        "Their location at all times",
+        "Their messages to friends"
+      ],
+      "answer": 1,
+      "why": "Learners control it: learning data can be switched off, personal details are off until switched on, and they can see exactly what the coach is given."
+    },
+    {
+      "q": "Which choice makes an AI learning tool greener and cheaper for learners in Kenya?",
+      "options": [
+        "Streaming high-definition video for every lesson",
+        "Sending every camera frame to a distant cloud data centre",
+        "Running AI on the phone and on local servers, and letting learners save lessons to use offline",
+        "Requiring a laptop and fast broadband"
+      ],
+      "answer": 2,
+      "why": "On-device AI, local models and offline saving cut data, energy and cost, and keep learners' data in Kenya."
+    }
+  ]
+}
