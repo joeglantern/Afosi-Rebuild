@@ -1,3 +1,7 @@
+// A short-lived token signed by the CMS service, which the applications
+// service verifies against its public keys. See getServiceToken().
+import { getServiceToken as getAuthToken } from '@/lib/auth-client';
+
 // Talks to this project's own VPS service (server/applications.js) for the
 // built-in application form's submissions — NOT the Vercel serverless
 // functions in api/ that the rest of this dashboard uses. Application
@@ -7,7 +11,6 @@
 const APPLICATIONS_BASE_URL =
   (import.meta as any).env?.VITE_APPLICATIONS_API_URL || 'https://api.afosi.org/applications';
 
-const getAuthToken = () => localStorage.getItem('afosi_admin_token');
 
 async function safeParseJSON(response: Response): Promise<any> {
   const text = await response.text();
@@ -20,7 +23,7 @@ async function safeParseJSON(response: Response): Promise<any> {
 }
 
 async function request(path: string, options: RequestInit = {}) {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const res = await fetch(`${APPLICATIONS_BASE_URL}${path}`, {
     ...options,
     headers: {
@@ -71,7 +74,7 @@ export const applicationsApi = {
   // which a plain <a href> download link can't do) and triggers a save —
   // avoids ever putting the admin's session token in a URL.
   async downloadFile(id: string, storedName: string, saveAsName: string) {
-    const token = getAuthToken();
+    const token = await getAuthToken();
     const res = await fetch(`${APPLICATIONS_BASE_URL}/${id}/files/${encodeURIComponent(storedName)}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });

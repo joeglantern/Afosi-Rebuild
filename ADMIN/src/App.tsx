@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Briefcase, Image, Menu, X, LogOut, Newspaper, FolderKanban, Inbox } from "lucide-react";
 import OpportunitiesAdminPanel from "./components/OpportunitiesAdminPanel";
@@ -8,35 +8,56 @@ import ProjectsAdminPanel from "./components/ProjectsAdminPanel";
 import ApplicationsAdminPanel from "./components/ApplicationsAdminPanel";
 import Login from "./components/Login";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { authClient, clearServiceToken } from "./lib/auth-client";
 
 type TabType = "opportunities" | "applications" | "gallery" | "news" | "projects";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("opportunities");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Check if user is already logged in (from localStorage)
-  useEffect(() => {
-    const authStatus = localStorage.getItem("afosi_admin_auth");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
+  // The session comes from the server (a httpOnly cookie), not from a flag in
+  // localStorage, so an expired or revoked session really logs you out.
+  const { data: session, isPending, refetch } = authClient.useSession();
 
   const handleLogin = () => {
-    setIsAuthenticated(true);
+    refetch();
   };
 
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem("afosi_admin_auth");
-    localStorage.removeItem("afosi_admin_token");
+  const handleLogout = async () => {
+    clearServiceToken();
+    await authClient.signOut();
+    refetch();
   };
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // Show login page if not authenticated
-  if (!isAuthenticated) {
+  if (!session) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  // Signed in, but not an admin: the API would refuse every change anyway.
+  if (session.user.role !== "admin") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-6">
+        <div className="max-w-sm text-center space-y-4">
+          <p className="text-foreground font-semibold">This account does not have admin access.</p>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground font-semibold"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
   }
 
   const tabs = [

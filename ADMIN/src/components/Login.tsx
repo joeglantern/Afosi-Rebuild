@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, Shield, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { authAPI } from "@/services/api";
+import { authClient } from "@/lib/auth-client";
 
 interface LoginProps {
   onLogin: () => void;
@@ -21,15 +21,17 @@ const Login = ({ onLogin }: LoginProps) => {
     setError("");
     
     try {
-      const response = await authAPI.login(email, password);
-      
-      if (response.success) {
-        // Store token
-        localStorage.setItem('afosi_admin_token', response.data.token);
-        localStorage.setItem('afosi_admin_auth', 'true');
-        onLogin();
+      // Better Auth sets an httpOnly session cookie; nothing is stored here.
+      const { error: signInError } = await authClient.signIn.email({ email, password });
+
+      if (signInError) {
+        setError(
+          signInError.status === 429
+            ? 'Too many attempts. Please wait a minute and try again.'
+            : signInError.message || 'Invalid credentials. Please try again.'
+        );
       } else {
-        setError(response.message || 'Login failed');
+        onLogin();
       }
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Please try again.');

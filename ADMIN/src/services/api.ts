@@ -1,7 +1,7 @@
-﻿// Use relative URLs - proxied to backend via nginx on cPanel, or serverless on Vercel
+﻿// Relative URLs: nginx proxies admin.afosi.org/api/* to the CMS service, so
+// the Better Auth session cookie rides along on every request automatically.
+// No token is read or attached here.
 const API_BASE_URL = '/api';
-
-const getAuthToken = () => localStorage.getItem('afosi_admin_token');
 
 // ── Safe response parser ────────────────────────────────────────────────────────
 // The server occasionally returns plain-text errors (e.g. "Too many requests")
@@ -52,13 +52,12 @@ let isRedirectingToLogin = false;
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
-  const token = getAuthToken();
 
   const config: RequestInit = {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
   };
@@ -67,11 +66,10 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     const response = await fetchWithRetry(url, config);
 
     // ── 401 Unauthorized ───────────────────────────────────────────────────
-    // Clear stale credentials ONCE and reload - guard against reload loops.
+    // The session has expired or been revoked. Reload ONCE (guarding against
+    // loops); the app then finds no session and shows the login screen.
     if (response.status === 401 && !isRedirectingToLogin) {
       isRedirectingToLogin = true;
-      localStorage.removeItem('afosi_admin_auth');
-      localStorage.removeItem('afosi_admin_token');
       // Small delay so any pending state updates settle before reload
       setTimeout(() => {
         isRedirectingToLogin = false;
@@ -105,15 +103,8 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   }
 }
 
-// Auth API
-export const authAPI = {
-  login: (email: string, password: string) =>
-    fetchAPI('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    }),
-  verify: () => fetchAPI('/auth/verify'),
-};
+// Sign-in, sign-out and the session are handled by the Better Auth client in
+// src/lib/auth-client.ts; there is no authAPI here any more.
 
 // Opportunities API - backend uses /:id path params
 export const opportunitiesAPI = {
@@ -255,62 +246,58 @@ export const projectsAPI = {
   toggleFeatured: (id: string) => fetchAPI(`/projects/${id}/toggle-featured`, { method: 'PATCH' }),
 };
 
-// Direct upload to Supabase Storage (supports up to 100MB)
-// Routes to correct bucket based on file type
-async function uploadDirectToSupabase(file: File, bucket: string = 'afosi-images') {
-  const SUPABASE_URL = 'https://pmigmljjnyucethipdtk.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtaWdtbGpqbnl1Y2V0aGlwZHRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MTU4NjMsImV4cCI6MjA4NzE5MTg2M30.E-AnMPDiMK6PeMZAIWWtk3gD1nGDMx46RBnHdto8nJc';
+// Upload through the CMS API, which checks the admin session, checks the
+// file's real type from its bytes, and stores it on the VPS. This replaces
+// uploading straight to Supabase Storage from the browser with a key that
+// was readable by anyone in the page source.
+//
+// Same return shape as before, so the panels calling uploadAPI are unchanged.
+async function uploadToServer(file: File, bucket: string = 'afosi-images') {
+  const form = new FormData();
+  form.append('bucket', bucket);
+  form.append('file', file);
 
-  const timestamp = Date.now();
-  const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-  const filePath = `${timestamp}-${sanitizedFileName}`;
+  // No Content-Type header: the browser sets the multipart boundary itself.
+  const response = await fetchWithRetry(`${API_BASE_URL}/upload`, {
+    method: 'POST',
+    body: form,
+    credentials: 'include',
+  });
 
-  const response = await fetch(
-    `${SUPABASE_URL}/storage/v1/object/${bucket}/${filePath}`,
-    {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: file,
-    }
-  );
+  if (response.status === 401) {
+    throw new Error('Session expired. Please log in again.');
+  }
 
+  const data = await safeParseJSON(response);
   if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = 'Upload failed';
-    try {
-      const errorJson = JSON.parse(errorText);
-      errorMessage = errorJson.message || errorMessage;
-    } catch {
-      errorMessage = errorText || errorMessage;
-    }
-    throw new Error(errorMessage);
+    throw new Error((data && data.message) || `Upload failed with status ${response.status}`);
   }
 
   return {
     success: true,
     data: {
-      url: `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${filePath}`,
-      path: filePath,
-      fileName: sanitizedFileName
+      url: data.data.url,
+      path: data.data.path,
+      fileName: data.data.fileName,
     },
-    message: 'File uploaded successfully'
+    message: data.message || 'File uploaded successfully',
   };
 }
 
 // Upload API - routes to correct bucket by context
 export const uploadAPI = {
   // Gallery images → afosi-images
-  uploadImage: async (file: File) => uploadDirectToSupabase(file, 'afosi-images'),
+  uploadImage: async (file: File) => uploadToServer(file, 'afosi-images'),
 
   // Generic upload - detects bucket by file type and context
   uploadFile: async (formData: FormData, context: 'news' | 'projects' | 'gallery' = 'news') => {
     const file = formData.get('file') as File;
     if (!file) throw new Error('No file provided');
     const bucket = context === 'projects' ? 'afosi-projects' : context === 'gallery' ? 'afosi-images' : 'afosi-news';
-    return uploadDirectToSupabase(file, bucket);
+    return uploadToServer(file, bucket);
   },
 
   // Explicit bucket uploads
-  uploadNewsFile: async (file: File) => uploadDirectToSupabase(file, 'afosi-news'),
-  uploadProjectImage: async (file: File) => uploadDirectToSupabase(file, 'afosi-projects'),
+  uploadNewsFile: async (file: File) => uploadToServer(file, 'afosi-news'),
+  uploadProjectImage: async (file: File) => uploadToServer(file, 'afosi-projects'),
 };

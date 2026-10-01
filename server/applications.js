@@ -19,12 +19,12 @@
 
 import express from 'express';
 import multer from 'multer';
-import jwt from 'jsonwebtoken';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import crypto from 'node:crypto';
 import * as store from './applications-store.js';
+import { verifyAdminToken } from './admin-auth.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const UPLOADS_ROOT = join(__dirname, 'uploads');
@@ -42,7 +42,6 @@ fs.mkdirSync(APPLICATIONS_DIR, { recursive: true });
 //
 // There is deliberately no fallback secret: a default committed to the repo
 // is a publicly known signing key, so missing config fails closed.
-const jwtSecret = () => process.env.JWT_SECRET;
 const hrEmail = () => process.env.HR_EMAIL || 'careers@afosi.org';
 const adminDashboardUrl = () => process.env.ADMIN_DASHBOARD_URL || 'https://admin.afosi.org';
 const afosiApiUrl = () => (process.env.AFOSI_API_URL || 'https://api.afosi.org/api').replace(/\/$/, '');
@@ -77,20 +76,15 @@ function extOf(name) {
 }
 
 // ── Admin auth ───────────────────────────────────────────────────────────────
-function requireAdmin(req, res, next) {
-  const secret = jwtSecret();
-  if (!secret) {
-    console.error('[applications] JWT_SECRET is not set; refusing admin access.');
-    return res.status(500).json({ success: false, message: 'Server auth is not configured.' });
-  }
+// Accepts the Better Auth token from the new dashboard and, until that
+// switch-over is done, the old dashboard's JWT_SECRET token. See
+// admin-auth.js for how the two are kept apart.
+async function requireAdmin(req, res, next) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
-  try {
-    req.admin = jwt.verify(token, secret);
-    next();
-  } catch {
-    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
-  }
+  const result = await verifyAdminToken(token);
+  if (!result.admin) return res.status(result.status).json({ success: false, message: result.message });
+  req.admin = result.admin;
+  next();
 }
 
 // ── Upload staging (multipart) ──────────────────────────────────────────────
