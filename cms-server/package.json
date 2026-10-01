@@ -1,0 +1,28 @@
+{
+  "name": "afosi-cms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Content API for afosi.org (news, projects, opportunities, gallery, uploads) on local Postgres, with Better Auth for the admin dashboard. Replaces the Supabase-backed backend on :8743 while keeping its public API contract.",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "node scripts/migrate.js",
+    "create-admin": "node scripts/create-admin.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-auth": "1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "multer": "^2.0.2",
+    "pg": "^8.23.1"
+  }
+}

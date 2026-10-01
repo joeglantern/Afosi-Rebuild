@@ -47,3 +47,8 @@ AFOSI-asset-tags.zip
 # Quiz service: real responses and the database credentials never go in git.
 quiz-server/.env
 quiz-server/data/
+
+# CMS service: database credentials, auth secret and uploaded files never go
+# in git. Uploads are content, backed up with the server, not the repo.
+cms-server/.env
+cms-server/data/
