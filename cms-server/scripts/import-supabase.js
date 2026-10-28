@@ -131,8 +131,8 @@ async function importAdmins(client) {
     );
     await client.query(
       `INSERT INTO account (id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt")
-       VALUES ($1, $2, 'credential', $2, $3, now(), now())`,
-      [randomUUID(), id, u.password_hash]
+       VALUES ($1, $2, 'credential', $3, $4, now(), now())`,
+      [randomUUID(), id, id, u.password_hash]
     );
     result.push(`${email}: imported as admin (existing password kept)`);
   }
