@@ -227,12 +227,17 @@ test('news: create, list, slug view counter, toggle, duplicate slug, delete', as
     body: {
       title: 'Hello', slug: 'hello', excerpt: 'e', content: 'c',
       published_date: '2026-09-01', tags: ['a', 'b'],
+      pdf_url: 'https://api.afosi.org/uploads/afosi-news/x.pdf', type: 'newsletter',
     },
   });
   assert.equal(created.status, 201);
   assert.equal(created.json.message, 'News article created successfully');
   assert.deepEqual(created.json.data.tags, ['a', 'b']);
   assert.equal(created.json.data.category, 'general');
+  assert.equal(created.json.data.pdf_url, 'https://api.afosi.org/uploads/afosi-news/x.pdf');
+  assert.equal(created.json.data.type, 'newsletter');
+  // A plain date, as Supabase sent it: the dashboard's date input needs this.
+  assert.equal(created.json.data.published_date, '2026-09-01');
   const id = created.json.data.id;
 
   const dup = await call('POST', '/api/news/admin', {

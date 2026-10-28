@@ -12,9 +12,10 @@ shapes, same messages. What changed is underneath, and the security model.
 
 | Done | Not yet |
 |---|---|
-| Service, schema, Better Auth, tests | Import the data from Supabase (blocked: the project is restricted, every read returns 402) |
-| Dashboard (`ADMIN/`) converted to Better Auth | Cut over nginx to this service |
-| Applications service accepts Better Auth tokens | Retire `ADMIN/api/` (old Vercel functions) and the Supabase project |
+| Service, schema, Better Auth, tests | Cut over nginx to this service |
+| Dashboard (`ADMIN/`) converted to Better Auth | Retire `ADMIN/api/` (old Vercel functions) and the Supabase project |
+| Applications service accepts Better Auth tokens | |
+| Export/import scripts for the Supabase data | |
 
 Until cutover, the old backend keeps serving the site. Nothing here is
 reachable from outside: the service listens on `127.0.0.1:8792` only.
@@ -53,6 +54,26 @@ pm2 start src/server.js --name afosi-cms --time && pm2 save
 
 curl -s http://127.0.0.1:8792/api/health
 ```
+
+## Moving the data off Supabase
+
+Two steps, both re-runnable. Run them once to load everything, and again
+right before cutover to pick up anything edited in the old dashboard since.
+
+```sh
+cd /var/www/afosi-rebuild/cms-server
+
+# 1. copy every table and every storage file out of Supabase (read-only there)
+(set -a; . /var/www/AFOSI_NGO/backend/.env; set +a; node scripts/export-supabase.js ~/supabase-export)
+
+# 2. load it: --dry-run first, it rolls back and reports
+node scripts/import-supabase.js ~/supabase-export --dry-run
+node scripts/import-supabase.js ~/supabase-export
+```
+
+The import replaces the four content tables, copies files into `UPLOAD_DIR`
+and rewrites every Supabase storage URL to `PUBLIC_UPLOAD_BASE`. The old
+`admin_users` accounts come across with their existing passwords.
 
 ## Auth
 

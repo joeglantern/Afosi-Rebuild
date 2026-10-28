@@ -17,6 +17,11 @@ const MIGRATIONS_DIR = path.join(config.root, 'migrations');
 // string to avoid losing precision. Every count here is small, so parse it.
 pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
 
+// DATE columns stay "YYYY-MM-DD" strings, as Supabase returned them. Turning
+// them into a Date would shift them by the server's time zone and send a
+// full timestamp the dashboard's date inputs cannot show.
+pg.types.setTypeParser(1082, (v) => v);
+
 export const pool = new pg.Pool({
   connectionString: config.databaseUrl,
   max: 10,

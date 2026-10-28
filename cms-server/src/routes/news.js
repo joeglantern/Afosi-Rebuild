@@ -5,8 +5,8 @@ import { pool } from '../db.js';
 import { requireAdmin, isUuid, pick, setClause, jsonb, clampInt, isUniqueViolation, fail } from '../http.js';
 
 const WRITABLE = [
-  'title', 'slug', 'excerpt', 'content', 'image_url', 'category', 'location',
-  'published_date', 'is_published', 'featured', 'author', 'tags',
+  'title', 'slug', 'excerpt', 'content', 'image_url', 'pdf_url', 'type', 'category',
+  'location', 'published_date', 'is_published', 'featured', 'author', 'tags',
 ];
 const JSONB = ['tags'];
 const NOT_FOUND = 'News article not found';
@@ -136,13 +136,13 @@ router.post('/admin', requireAdmin, async (req, res) => {
   }
   try {
     const { rows } = await pool.query(
-      `INSERT INTO news (title, slug, excerpt, content, image_url, category, location,
-                         published_date, is_published, featured, author, tags)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO news (title, slug, excerpt, content, image_url, pdf_url, type, category,
+                         location, published_date, is_published, featured, author, tags)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *`,
       [
-        b.title, b.slug, b.excerpt, b.content, b.image_url ?? null,
-        b.category || 'general', b.location ?? null, b.published_date,
+        b.title, b.slug, b.excerpt, b.content, b.image_url ?? null, b.pdf_url ?? null,
+        b.type || 'article', b.category || 'general', b.location ?? null, b.published_date,
         b.is_published !== undefined ? Boolean(b.is_published) : true,
         Boolean(b.featured), b.author ?? null,
         JSON.stringify(Array.isArray(b.tags) ? b.tags : []),
