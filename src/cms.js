@@ -11,15 +11,17 @@ const esc = (s) =>
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-// Gallery/news photos come straight from Supabase Storage at their original
-// upload size (some are 10-20MB) — route them through our own resize/cache
-// proxy instead of loading the original. Falls through to the raw url for
-// anything not hosted on Supabase, so nothing silently breaks if that changes.
+// Gallery/news photos are stored at their original upload size (some are
+// 10-20MB) — route them through our own resize/cache proxy instead of loading
+// the original. That covers our own uploads (api.afosi.org/uploads) and any
+// old Supabase Storage URL; anything else falls through to the raw url.
 const IMG_PROXY_BASE = (import.meta.env && import.meta.env.VITE_API_ROOT) || 'https://api.afosi.org';
 function imgProxy(url, width) {
   if (!url) return url;
   try {
-    if (!/\.supabase\.co$/i.test(new URL(url).hostname)) return url;
+    const u = new URL(url);
+    const ours = u.hostname === 'api.afosi.org' && u.pathname.startsWith('/uploads/');
+    if (!ours && !/\.supabase\.co$/i.test(u.hostname)) return url;
   } catch {
     return url;
   }

@@ -24,7 +24,7 @@ const DEFAULT_WIDTH = 800;
 const MAX_SOURCE_BYTES = 30 * 1024 * 1024; // guard against runaway downloads
 
 function allowedHosts() {
-  return (process.env.IMG_ALLOWED_HOSTS || 'pmigmljjnyucethipdtk.supabase.co')
+  return (process.env.IMG_ALLOWED_HOSTS || 'api.afosi.org,pmigmljjnyucethipdtk.supabase.co')
     .split(',').map((s) => s.trim()).filter(Boolean);
 }
 
@@ -32,6 +32,8 @@ function isAllowedUrl(raw) {
   try {
     const u = new URL(raw);
     if (u.protocol !== 'https:') return false;
+    // Our own API host serves far more than images; only its uploads count.
+    if (u.hostname === 'api.afosi.org' && !u.pathname.startsWith('/uploads/')) return false;
     return allowedHosts().includes(u.hostname);
   } catch {
     return false;
