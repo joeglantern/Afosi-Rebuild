@@ -14,6 +14,7 @@ import projects from './routes/projects.js';
 import opportunities from './routes/opportunities.js';
 import gallery from './routes/gallery.js';
 import upload from './routes/upload.js';
+import blog from './routes/blog.js';
 
 export const app = express();
 
@@ -87,6 +88,7 @@ app.use('/api/projects', projects);
 app.use('/api/opportunities', opportunities);
 app.use('/api/gallery', gallery);
 app.use('/api/upload', upload);
+app.use('/api/blog', blog);
 
 // Uploaded files. Names are random UUIDs and never reused, so they can be
 // cached forever. The type was checked on the way in (storage.js), and

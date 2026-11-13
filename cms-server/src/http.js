@@ -1,24 +1,34 @@
 // Shared request guards and helpers for the content routes.
 
 import { fromNodeHeaders } from 'better-auth/node';
-import { auth } from './auth.js';
+import { auth, ROLE_ADMIN, ROLE_EDITOR } from './auth.js';
 import { config } from './config.js';
+
+// A guard that lets through a signed-in, unbanned user holding one of the
+// given roles. The signed-in user is left on req.admin for the route.
+function requireRole(roles, deniedMessage) {
+  return async function guard(req, res, next) {
+    const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
+    if (!session) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+    const { user } = session;
+    if (user.banned || !roles.includes(user.role)) {
+      return res.status(403).json({ success: false, message: deniedMessage });
+    }
+    req.admin = user;
+    next();
+  };
+}
 
 // Every content write needs a signed-in, unbanned admin. The old backend left
 // gallery, opportunities and upload writes open to anyone; they are not open
 // here.
-export async function requireAdmin(req, res, next) {
-  const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
-  if (!session) {
-    return res.status(401).json({ success: false, message: 'Authentication required' });
-  }
-  const { user } = session;
-  if (user.banned || user.role !== 'admin') {
-    return res.status(403).json({ success: false, message: 'Admin access required' });
-  }
-  req.admin = user;
-  next();
-}
+export const requireAdmin = requireRole([ROLE_ADMIN], 'Admin access required');
+
+// The blog is the one area a blog editor may also change.
+export const requireBlogEditor = requireRole([ROLE_ADMIN, ROLE_EDITOR], 'Blog editor access required');
+export const isAdmin = (user) => user?.role === ROLE_ADMIN;
 
 // Defence in depth for cookie-authenticated writes: a browser always sends
 // Origin on a cross-site POST/PUT/PATCH/DELETE, so refuse any that is not

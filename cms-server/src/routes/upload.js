@@ -1,15 +1,16 @@
-// /api/upload: files for news, projects and the gallery.
+// /api/upload: files for news, projects, the gallery and the blog.
 //
 // Replaces two old paths at once: the backend's own upload route, and the
 // admin dashboard uploading straight to Supabase Storage from the browser
 // with a key anyone could read out of the page source. Both now come here,
-// behind an admin session.
+// behind an admin session. A blog editor may upload too, but only images,
+// and only into the blog's bucket.
 
 import { Router } from 'express';
 import multer from 'multer';
-import { requireAdmin, fail } from '../http.js';
+import { requireAdmin, requireBlogEditor, isAdmin, fail } from '../http.js';
 import { config } from '../config.js';
-import { saveUpload, removeUpload, DEFAULT_BUCKET, BUCKETS } from '../storage.js';
+import { saveUpload, removeUpload, sniff, DEFAULT_BUCKET, BUCKETS, BLOG_BUCKET } from '../storage.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -32,13 +33,19 @@ function receiveFile(req, res, next) {
 
 const router = Router();
 
-// requireAdmin runs first, so an anonymous request is refused before the
-// body is read, rather than after buffering up to the size limit.
-router.post('/', requireAdmin, receiveFile, async (req, res) => {
+// The guard runs first, so an anonymous request is refused before the body
+// is read, rather than after buffering up to the size limit.
+router.post('/', requireBlogEditor, receiveFile, async (req, res) => {
   if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
   const bucket = req.body?.bucket || DEFAULT_BUCKET;
   if (!BUCKETS.includes(bucket)) {
     return res.status(400).json({ success: false, message: `Unknown bucket. Use one of: ${BUCKETS.join(', ')}` });
+  }
+  if (bucket !== BLOG_BUCKET && !isAdmin(req.admin)) {
+    return res.status(403).json({ success: false, message: 'Admin access required' });
+  }
+  if (bucket === BLOG_BUCKET && sniff(req.file.buffer)?.kind !== 'image') {
+    return res.status(400).json({ success: false, message: 'Only JPEG, PNG, GIF and WebP images can be used in the blog' });
   }
   try {
     const saved = await saveUpload(req.file.buffer, bucket);

@@ -11,6 +11,7 @@ const NAV_LINKS = [
   ['platforms', 'Platforms', '/platforms.html'],
   ['team', 'Team', '/team.html'],
   ['news', 'News', '/news.html'],
+  ['blog', 'Blog', '/blog.html'],
   ['gallery', 'Gallery', '/gallery.html'],
   ['opportunities', 'Opportunities', '/opportunities.html'],
   ['contact', 'Contact', '/contact.html'],
@@ -142,6 +143,7 @@ const FOOTER_HTML = `
             <a href="/projects.html" style="color:#C9C2B6;">Projects</a>
             <a href="/team.html" style="color:#C9C2B6;">Our Team</a>
             <a href="/news.html" style="color:#C9C2B6;">News</a>
+            <a href="/blog.html" style="color:#C9C2B6;">Blog</a>
             <a href="/gallery.html" style="color:#C9C2B6;">Gallery</a>
             <a href="/opportunities.html" style="color:#C9C2B6;">Opportunities</a>
             <a href="/partners.html" style="color:#C9C2B6;">Partners</a>

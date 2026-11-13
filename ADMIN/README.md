@@ -7,6 +7,9 @@ Separate admin application for managing AFOSI website content.
 - **Opportunities Management**: Create, edit, delete, and toggle job opportunities
 - **Applications**: Review, categorize (by opportunity type) and download documents from applications submitted through the site's built-in application form — see "Applications tab" below, it's a separate service from the rest of this dashboard
 - **Gallery Management**: Upload, edit, and delete gallery images with automatic Supabase Storage integration
+- **Blog**: Write posts in Markdown with a live preview (rendered by the site's own `../src/markdown.js` and `../public/blog-prose.css`), cover images, categories, tags, drafts, scheduled publishing and featured posts. Unsaved work is backed up in the browser.
+- **Blog team** (admins only): Create logins for blog editors, change roles, reset passwords, suspend or remove accounts. A **blog editor** signs in here and sees only the Blog tab; the server enforces the same split (`cms-server/src/http.js`).
+- **Change password**: Everyone can replace the temporary password an admin gave them (sidebar, bottom).
 - **Real-time Updates**: Changes reflect immediately on the main website
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
 

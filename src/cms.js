@@ -3,7 +3,8 @@
 // selected by `body[data-cms]`:
 //   news · gallery · opportunities (list) · opp-detail
 // The application form lives in a separate module (apply.js).
-import { newsAPI, galleryAPI, opportunitiesAPI, projectsAPI } from './api.js';
+import { newsAPI, galleryAPI, opportunitiesAPI, projectsAPI, blogAPI } from './api.js';
+import { renderMarkdown, markdownToText } from './markdown.js';
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 const esc = (s) =>
@@ -767,11 +768,474 @@ function opportunityDetailHTML(opp) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// BLOG
+// ═════════════════════════════════════════════════════════════════════════════
+const BLOG_PAGE_SIZE = 9;
+const postHref = (slug) => `/blog-post.html?slug=${encodeURIComponent(slug)}`;
+const DEFAULT_BYLINE = 'AFOSI Team';
+
+function blogMeta(p) {
+  return [fmtDate(p.published_at), `${p.reading_minutes || 1} min read`].filter(Boolean).join(' · ');
+}
+
+// A post without a cover still gets a picture-shaped panel, in the site's
+// dotted-ink style, so the grid keeps its rhythm.
+function blogPlaceholder(p) {
+  const initial = esc(String(p.category || p.title || 'A').trim().charAt(0).toUpperCase());
+  return `<div aria-hidden="true" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#141210;">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(242,101,34,0.16) 1.3px,transparent 1.6px);background-size:22px 22px;"></div>
+            <span style="position:relative;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:96px;line-height:1;color:#F26522;">${initial}</span>
+          </div>`;
+}
+
+function blogCover(p, width) {
+  return p.cover_image_url
+    ? `<img src="${esc(imgProxy(p.cover_image_url, width))}" alt="${esc(p.cover_image_alt || '')}" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;">`
+    : blogPlaceholder(p);
+}
+
+const categoryTag = (text, extra = '') =>
+  `<span style="background:#F26522;color:#141210;font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;padding:5px 9px;letter-spacing:0.08em;text-transform:uppercase;${extra}">${esc(text)}</span>`;
+
+function blogCard(p) {
+  const excerpt = p.excerpt || '';
+  return (
+    `<a href="${postHref(p.slug)}" data-reveal class="af-blog-card hov-shadow" style="display:flex;flex-direction:column;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;color:#17150F;">
+       <div style="aspect-ratio:16/10;position:relative;overflow:hidden;border-bottom:2px solid #17150F;background:#141210;">
+         ${blogCover(p, 640)}
+         ${categoryTag(p.category, 'position:absolute;top:12px;left:12px;')}
+       </div>
+       <div style="padding:24px;display:flex;flex-direction:column;flex:1;">
+         <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:0.06em;color:#6E6559;margin:0 0 10px;text-transform:uppercase;">${esc(blogMeta(p))}</div>
+         <h3 style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;margin:0 0 10px;line-height:1.2;">${esc(p.title)}</h3>
+         ${excerpt ? `<p style="font-size:15px;color:#5A5346;margin:0 0 20px;line-height:1.6;">${esc(excerpt)}</p>` : ''}
+         <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;border-top:1px solid rgba(23,21,15,0.12);">
+           <span style="font-size:13.5px;font-weight:700;">${esc(p.author_name || DEFAULT_BYLINE)}</span>
+           <span aria-hidden="true" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;">→</span>
+         </div>
+       </div>
+     </a>`
+  );
+}
+
+function blogFeatured(p) {
+  return (
+    `<a href="${postHref(p.slug)}" data-reveal class="af-blog-card af-blog-featured hov-shadow" style="display:grid;grid-template-columns:1.1fr 1fr;background:#FFFFFF;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;color:#17150F;">
+       <div class="af-blog-featured-media" style="position:relative;min-height:380px;overflow:hidden;background:#141210;border-right:2px solid #17150F;">
+         ${blogCover(p, 1100)}
+       </div>
+       <div style="padding:44px 42px;display:flex;flex-direction:column;justify-content:center;">
+         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+           ${categoryTag('Featured', 'background:#17150F;color:#FBF6EE;')}
+           ${categoryTag(p.category)}
+         </div>
+         <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,3vw,42px);font-weight:700;line-height:1.08;letter-spacing:-0.02em;margin:0;">${esc(p.title)}</h2>
+         ${p.excerpt ? `<p style="font-size:17px;color:#5A5346;line-height:1.65;margin:18px 0 0;">${esc(p.excerpt)}</p>` : ''}
+         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-top:28px;padding-top:20px;border-top:1px solid rgba(23,21,15,0.12);">
+           <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.05em;text-transform:uppercase;color:#6E6559;"><strong style="color:#17150F;font-family:'Manrope',sans-serif;font-size:14px;letter-spacing:0;text-transform:none;">${esc(p.author_name || DEFAULT_BYLINE)}</strong>&nbsp; ${esc(blogMeta(p))}</span>
+           <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;border-bottom:2px solid #F26522;padding-bottom:2px;">Read the story →</span>
+         </div>
+       </div>
+     </a>`
+  );
+}
+
+function chipStyle(on) {
+  return `cursor:pointer;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.04em;padding:9px 18px;border:2px solid ${on ? '#F26522' : '#17150F'};background:${on ? '#F26522' : 'transparent'};color:#141210;`;
+}
+
+async function renderBlog() {
+  const grid = document.querySelector('[data-blog-grid]');
+  if (!grid) return;
+  const featuredWrap = document.querySelector('[data-blog-featured-wrap]');
+  const featuredSlot = document.querySelector('[data-blog-featured]');
+  const catsEl = document.querySelector('[data-blog-cats]');
+  const form = document.querySelector('[data-blog-search]');
+  const input = form && form.querySelector('input');
+  const statusEl = document.querySelector('[data-blog-status]');
+  const moreBtn = document.querySelector('[data-blog-more]');
+
+  // Filters live in the URL, so a filtered view can be shared or bookmarked
+  // and the back button returns to it.
+  const params = new URLSearchParams(location.search);
+  const state = {
+    category: params.get('category') || '',
+    tag: params.get('tag') || '',
+    q: (params.get('q') || '').slice(0, 100),
+    offset: 0,
+    total: 0,
+    featuredSlug: '',
+  };
+  if (input) input.value = state.q;
+
+  const syncUrl = () => {
+    const p = new URLSearchParams();
+    if (state.category) p.set('category', state.category);
+    if (state.tag) p.set('tag', state.tag);
+    if (state.q) p.set('q', state.q);
+    const qs = p.toString();
+    history.replaceState(null, '', `${location.pathname}${qs ? `?${qs}` : ''}`);
+  };
+
+  const filtered = () => Boolean(state.category || state.tag || state.q);
+
+  function describe() {
+    if (!statusEl) return;
+    const bits = [];
+    if (state.category) bits.push(`in ${state.category}`);
+    if (state.tag) bits.push(`tagged “${state.tag}”`);
+    if (state.q) bits.push(`matching “${state.q}”`);
+    const n = state.total + (state.featuredSlug ? 1 : 0);
+    statusEl.textContent = filtered()
+      ? `${n} ${n === 1 ? 'story' : 'stories'} ${bits.join(', ')}`
+      : '';
+    if (filtered()) {
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.textContent = 'Clear filters';
+      clear.style.cssText = "cursor:pointer;margin-left:14px;background:none;border:0;padding:0;font:inherit;color:#17150F;text-decoration:underline;text-decoration-color:#F26522;text-underline-offset:3px;text-decoration-thickness:2px;";
+      clear.addEventListener('click', () => {
+        state.category = '';
+        state.tag = '';
+        state.q = '';
+        if (input) input.value = '';
+        paintChips();
+        load(true);
+      });
+      statusEl.appendChild(clear);
+    }
+  }
+
+  let categories = [];
+  function paintChips() {
+    if (!catsEl) return;
+    const all = [['', 'All stories'], ...categories.map((c) => [c.category, c.category])];
+    catsEl.innerHTML = all
+      .map(([value, label]) => {
+        const on = value === state.category;
+        return `<button type="button" data-blog-cat="${esc(value)}" aria-pressed="${on}" style="${chipStyle(on)}">${esc(label)}</button>`;
+      })
+      .join('');
+    catsEl.querySelectorAll('[data-blog-cat]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.category = btn.dataset.blogCat;
+        state.tag = '';
+        paintChips();
+        load(true);
+      });
+    });
+  }
+
+  async function loadFeatured() {
+    // The featured slot is only for the unfiltered front page.
+    if (filtered()) {
+      featuredWrap.hidden = true;
+      state.featuredSlug = '';
+      return;
+    }
+    try {
+      let res = await blogAPI.getAll({ featured: true, limit: 1 });
+      let post = res && res.data && res.data[0];
+      if (!post) {
+        res = await blogAPI.getAll({ limit: 1 });
+        post = res && res.data && res.data[0];
+      }
+      if (!post) {
+        featuredWrap.hidden = true;
+        state.featuredSlug = '';
+        return;
+      }
+      state.featuredSlug = post.slug;
+      featuredSlot.innerHTML = blogFeatured(post);
+      featuredWrap.hidden = false;
+      revealAll(Array.from(featuredSlot.children));
+    } catch {
+      featuredWrap.hidden = true;
+      state.featuredSlug = '';
+    }
+  }
+
+  let loading = false;
+  async function load(reset) {
+    if (loading) return;
+    loading = true;
+    if (reset) {
+      state.offset = 0;
+      syncUrl();
+      await loadFeatured();
+    }
+    if (moreBtn) {
+      moreBtn.disabled = true;
+      moreBtn.textContent = 'Loading…';
+    }
+    try {
+      const res = await blogAPI.getAll({
+        category: state.category,
+        tag: state.tag,
+        q: state.q,
+        exclude: state.featuredSlug || undefined,
+        limit: BLOG_PAGE_SIZE,
+        offset: state.offset,
+      });
+      const items = (res && res.data) || [];
+      state.total = (res && res.total) || 0;
+      if (reset) {
+        grid.style.display = 'grid';
+        grid.innerHTML = '';
+      }
+      if (!items.length && reset) {
+        grid.style.display = 'block';
+        grid.innerHTML = state.featuredSlug
+          ? ''
+          : stateBox(
+              filtered() ? 'No stories match' : 'No stories yet',
+              filtered()
+                ? 'Try another topic or search term, or clear the filters to see every story.'
+                : 'Stories written in the AFOSI dashboard will appear here once they are published.'
+            );
+        revealAll(Array.from(grid.children));
+      } else {
+        const start = grid.children.length;
+        grid.insertAdjacentHTML('beforeend', items.map(blogCard).join(''));
+        revealAll(Array.from(grid.children).slice(start));
+        // Move keyboard focus to the first new story after "Load more".
+        if (!reset && grid.children[start]) grid.children[start].focus({ preventScroll: true });
+      }
+      state.offset += items.length;
+      if (moreBtn) moreBtn.hidden = state.offset >= state.total;
+      describe();
+    } catch (err) {
+      grid.style.display = 'block';
+      grid.innerHTML = stateBox('Unable to load stories', 'Please check your connection and try again shortly.');
+      if (moreBtn) moreBtn.hidden = true;
+      console.error('[CMS] blog:', err);
+    } finally {
+      loading = false;
+      if (moreBtn) {
+        moreBtn.disabled = false;
+        moreBtn.textContent = 'Load more stories';
+      }
+    }
+  }
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      state.q = (input.value || '').trim().slice(0, 100);
+      load(true);
+    });
+    // Clearing the field (the x in a search box) shows everything again.
+    input.addEventListener('search', () => {
+      if (!input.value && state.q) {
+        state.q = '';
+        load(true);
+      }
+    });
+  }
+  if (moreBtn) moreBtn.addEventListener('click', () => load(false));
+
+  paintChips();
+  blogAPI
+    .getCategories()
+    .then((res) => {
+      categories = (res && res.data) || [];
+      // Keep a category from the URL selectable even if it has no posts now.
+      if (state.category && !categories.some((c) => c.category === state.category)) {
+        categories.push({ category: state.category, count: 0 });
+      }
+      paintChips();
+    })
+    .catch(() => {});
+  load(true);
+}
+
+// ── Single post ──────────────────────────────────────────────────────────────
+const SHARE_ICONS = {
+  whatsapp: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1-.7-.3-1.4-.7-2-1.3-.5-.5-1-1.1-1.3-1.7-.1-.2 0-.4.1-.5l.4-.4.2-.4v-.4l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.6.3-.6.6-.9 1.4-.9 2.2.1 1 .5 2 1.1 2.8 1.2 1.7 2.7 3 4.6 3.8.5.2 1 .4 1.5.5.6.2 1.2.1 1.7-.1.6-.3 1-.8 1.2-1.4.1-.3.1-.6 0-.9l-.5-.4z"/></svg>',
+  x: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.2 2.3h3.4l-7.4 8.4L23 21.7h-6.8l-5.3-6.9-6.1 6.9H1.4l7.9-9L1 2.3h7l4.8 6.3 5.4-6.3zm-1.2 17.4h1.9L7.1 4.2H5.1l11.9 15.5z"/></svg>',
+  linkedin: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.94 5a1.94 1.94 0 1 1-3.88 0 1.94 1.94 0 0 1 3.88 0zM3.4 8.5h3.1V21H3.4V8.5zM9.1 8.5h3v1.7h.05c.42-.8 1.45-1.65 3-1.65 3.2 0 3.8 2.1 3.8 4.9V21h-3.1v-5c0-1.2 0-2.7-1.65-2.7s-1.9 1.3-1.9 2.6V21h-3.1V8.5z"/></svg>',
+  facebook: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.5-1.5h1.6V3.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.2v2.2H7.9V13h2.3v8h3.3z"/></svg>',
+  link: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+};
+
+function shareBar(post) {
+  const url = encodeURIComponent(location.href);
+  const text = encodeURIComponent(post.title);
+  const links = [
+    ['WhatsApp', SHARE_ICONS.whatsapp, `https://wa.me/?text=${text}%20${url}`],
+    ['X', SHARE_ICONS.x, `https://twitter.com/intent/tweet?text=${text}&url=${url}`],
+    ['LinkedIn', SHARE_ICONS.linkedin, `https://www.linkedin.com/sharing/share-offsite/?url=${url}`],
+    ['Facebook', SHARE_ICONS.facebook, `https://www.facebook.com/sharer/sharer.php?u=${url}`],
+  ];
+  const btn = 'width:46px;height:46px;display:flex;align-items:center;justify-content:center;border:2px solid #17150F;background:#FFFFFF;color:#17150F;cursor:pointer;padding:0;';
+  return (
+    `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+       <span style="font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#6E6559;margin-right:6px;">Share</span>
+       ${links.map(([label, icon, href]) => `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="Share on ${label}" class="hov-social2" style="${btn}">${icon}</a>`).join('')}
+       <button type="button" data-copy-link aria-label="Copy link to this story" class="hov-social2" style="${btn}">${SHARE_ICONS.link}</button>
+       <span data-copy-status role="status" aria-live="polite" style="font-family:'Space Mono',monospace;font-size:12px;color:#2E7D32;"></span>
+     </div>`
+  );
+}
+
+function setMeta(selector, attr, value) {
+  let el = document.head.querySelector(selector);
+  if (!el) {
+    el = document.createElement('meta');
+    const [, key, name] = selector.match(/\[(name|property)="([^"]+)"\]/) || [];
+    if (!key) return;
+    el.setAttribute(key, name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute(attr, value);
+}
+
+function blogPostHTML(post, related) {
+  const author = post.author_name || DEFAULT_BYLINE;
+  const initials = author
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+  const body = renderMarkdown(post.content, {
+    imageSrc: (url, width) => imgProxy(url, width),
+    idPrefix: 'sec-',
+  });
+  const tags = Array.isArray(post.tags) ? post.tags : [];
+
+  const cover = post.cover_image_url
+    ? `<figure data-reveal class="af-post-cover" style="margin:44px 0 0;">
+         <div style="aspect-ratio:16/8.5;position:relative;overflow:hidden;border:2px solid #17150F;box-shadow:7px 7px 0 #17150F;background:#141210;">
+           <img src="${esc(imgProxy(post.cover_image_url, 1600))}" alt="${esc(post.cover_image_alt || '')}" decoding="async" fetchpriority="high" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;">
+         </div>
+       </figure>`
+    : '';
+
+  return (
+    `<!-- HERO -->
+     <section data-section class="af-post-hero" style="max-width:1320px;margin:0 auto;padding:48px 40px 10px;">
+       <a href="/blog.html" style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14px;margin-bottom:28px;">← All stories</a>
+       <div style="max-width:960px;animation:rise 0.8s cubic-bezier(.2,.6,.2,1) both;">
+         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;">
+           <a href="/blog.html?category=${encodeURIComponent(post.category)}" style="text-decoration:none;">${categoryTag(post.category)}</a>
+           ${categoryTag(`${post.reading_minutes || 1} min read`, 'background:transparent;border:2px solid #17150F;padding:3px 8px;')}
+         </div>
+         <h1 class="af-post-title" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:clamp(38px,5vw,68px);line-height:1.04;letter-spacing:-0.025em;margin:0;">${esc(post.title)}</h1>
+         ${post.excerpt ? `<p class="af-post-lede" style="font-size:21px;line-height:1.55;color:#5A5346;margin:24px 0 0;max-width:760px;">${esc(post.excerpt)}</p>` : ''}
+         <div style="display:flex;align-items:center;gap:14px;margin-top:30px;">
+           <span aria-hidden="true" style="flex:none;width:48px;height:48px;display:flex;align-items:center;justify-content:center;background:#17150F;color:#FBF6EE;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;">${esc(initials || 'A')}</span>
+           <span style="display:flex;flex-direction:column;line-height:1.35;">
+             <span style="font-weight:800;font-size:15.5px;">${esc(author)}</span>
+             <span style="font-family:'Space Mono',monospace;font-size:12px;letter-spacing:0.04em;color:#6E6559;"><time datetime="${esc(post.published_at)}">${esc(fmtDateLong(post.published_at))}</time></span>
+           </span>
+         </div>
+       </div>
+       ${cover}
+     </section>
+
+     <!-- BODY -->
+     <section data-section class="af-post-body" style="max-width:1320px;margin:0 auto;padding:56px 40px 40px;">
+       <article class="af-prose" style="margin:0 auto;">${body || '<p>This story has no text yet.</p>'}</article>
+       <div class="af-post-foot" style="font-size:19px;max-width:34em;margin:56px auto 0;padding-top:28px;border-top:2px solid #17150F;display:flex;flex-direction:column;gap:22px;">
+         ${tags.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;">${tags.map((t) => `<a href="/blog.html?tag=${encodeURIComponent(t)}" class="hov-border" style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;padding:6px 11px;border:2px solid rgba(23,21,15,0.25);background:#FFFFFF;color:#17150F;">#${esc(t)}</a>`).join('')}</div>` : ''}
+         ${shareBar(post)}
+       </div>
+     </section>
+
+     ${related.length ? `
+     <!-- KEEP READING -->
+     <section data-section style="max-width:1320px;margin:0 auto;padding:60px 40px 40px;">
+       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:28px;">
+         <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(28px,3vw,40px);font-weight:700;letter-spacing:-0.02em;margin:0;">Keep reading</h2>
+         <a href="/blog.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;border-bottom:2px solid #F26522;padding-bottom:2px;">All stories →</a>
+       </div>
+       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:28px;">${related.map(blogCard).join('')}</div>
+     </section>` : ''}
+
+     <!-- CTA -->
+     <section data-section style="max-width:1320px;margin:0 auto;padding:40px 40px 100px;">
+       <div data-reveal class="af-post-cta" style="background:#141210;color:#F2EDE4;border:2px solid #17150F;box-shadow:7px 7px 0 #F26522;padding:44px 48px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px;">
+         <div style="max-width:620px;">
+           <h2 style="font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,2.6vw,36px);font-weight:700;line-height:1.1;margin:0;color:#FBF6EE;">Help write the next chapter.</h2>
+           <p style="font-size:16px;color:#C9C2B6;margin:12px 0 0;line-height:1.6;">Every story here starts with young people and the partners who back them. Support the work or join it.</p>
+         </div>
+         <div style="display:flex;flex-wrap:wrap;gap:12px;">
+           <a href="/donate.html" class="hov-paper" style="background:#F26522;color:#141210;padding:14px 22px;font-weight:700;font-size:15px;border:2px solid #F26522;">Donate</a>
+           <a href="/contact.html" class="hov-cta" style="background:transparent;color:#FBF6EE;padding:14px 22px;font-weight:700;font-size:15px;border:2px solid #FBF6EE;">Get involved</a>
+         </div>
+       </div>
+     </section>`
+  );
+}
+
+function blogPostMissing() {
+  return `<section data-section style="max-width:1320px;margin:0 auto;padding:90px 40px 120px;">
+            ${stateBox('This story is not available', 'It may have been moved or unpublished. Browse the rest of the AFOSI blog instead.')}
+            <div style="text-align:center;margin-top:28px;"><a href="/blog.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;border-bottom:2px solid #F26522;padding-bottom:2px;">← All stories</a></div>
+          </section>`;
+}
+
+async function renderBlogPost() {
+  const root = document.querySelector('[data-blog-post]');
+  if (!root) return;
+  const slug = new URLSearchParams(location.search).get('slug');
+  if (!slug) {
+    root.innerHTML = blogPostMissing();
+    return;
+  }
+  try {
+    const res = await blogAPI.getBySlug(slug);
+    const post = res && res.data;
+    if (!post) {
+      root.innerHTML = blogPostMissing();
+      return;
+    }
+    const description = post.excerpt || markdownToText(post.content, 160);
+    document.title = `${post.title} - AFOSI Blog`;
+    setMeta('meta[name="description"]', 'content', description);
+    setMeta('meta[property="og:title"]', 'content', post.title);
+    setMeta('meta[property="og:description"]', 'content', description);
+    if (post.cover_image_url) setMeta('meta[property="og:image"]', 'content', post.cover_image_url);
+
+    root.innerHTML = blogPostHTML(post, (res && res.related) || []);
+    revealAll(Array.from(root.querySelectorAll('[data-reveal]')));
+
+    const copyBtn = root.querySelector('[data-copy-link]');
+    const copyStatus = root.querySelector('[data-copy-status]');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(location.href);
+          copyStatus.textContent = 'Link copied';
+        } catch {
+          copyStatus.textContent = 'Copy the address bar to share';
+        }
+        setTimeout(() => { copyStatus.textContent = ''; }, 3000);
+      });
+    }
+
+    // A link to a heading (#sec-...) lands on it once the story is drawn.
+    if (location.hash) {
+      const target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+      if (target) target.scrollIntoView();
+    }
+  } catch (err) {
+    root.innerHTML = /not found/i.test(err.message || '')
+      ? blogPostMissing()
+      : `<section data-section style="max-width:1320px;margin:0 auto;padding:90px 40px 120px;">${stateBox('Unable to load this story', 'Please check your connection and try again shortly.')}</section>`;
+    if (!/not found/i.test(err.message || '')) console.error('[CMS] blog post:', err);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Boot
 // ═════════════════════════════════════════════════════════════════════════════
 (function boot() {
   const mode = document.body.dataset.cms;
   if (mode === 'news') renderNews();
+  else if (mode === 'blog') renderBlog();
+  else if (mode === 'blog-post') renderBlogPost();
   else if (mode === 'gallery') renderGallery();
   else if (mode === 'opportunities') renderOpportunities();
   else if (mode === 'opp-detail') renderOpportunityDetail();

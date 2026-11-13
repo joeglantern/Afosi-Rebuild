@@ -1,6 +1,6 @@
 # afosi-cms
 
-The content API for afosi.org (news, projects, opportunities, gallery,
+The content API for afosi.org (news, projects, opportunities, gallery, blog,
 uploads) on the VPS's own Postgres, with **Better Auth** for the admin
 dashboard. It replaces the Supabase-backed backend that runs on `:8743`
 (`/var/www/AFOSI_NGO/backend`, owned by `onsomu`).
@@ -31,7 +31,7 @@ src/
   db.js            pool + content migration runner
   http.js          requireAdmin, origin guard, helpers
   storage.js       uploads on disk, type checked by content
-  routes/          news, projects, opportunities, gallery, upload
+  routes/          news, projects, opportunities, gallery, blog, upload
 migrations/        content tables (numbered SQL, never edited once applied)
 scripts/
   migrate.js       content + auth tables;  --dry-run prints the SQL
@@ -50,6 +50,8 @@ cd /var/www/afosi-rebuild/cms-server
 npm ci --omit=dev
 npm run migrate                 # add --dry-run first to see the SQL
 node scripts/create-admin.js --email you@afosi.org --name "Your Name"
+# a blog editor (Blog tab only); admins can also do this from the dashboard
+node scripts/create-admin.js --email writer@afosi.org --name "Writer" --role editor
 pm2 start src/server.js --name afosi-cms --time && pm2 save
 
 curl -s http://127.0.0.1:8792/api/health
@@ -83,9 +85,16 @@ and rewrites every Supabase storage URL to `PUBLIC_UPLOAD_BASE`. The old
   in localStorage, where any script on the page could read it.
 - **Sign-up is disabled.** Accounts come from `create-admin.js`, or from the
   Supabase import.
-- Only users with role `admin` (Better Auth admin plugin) may change content.
-  Every write requires it. The old backend left gallery, opportunities and
-  upload writes open to anyone.
+- **Roles** (Better Auth admin plugin, listed explicitly in `src/auth.js`, so
+  a mistyped role is refused rather than stored):
+  - `admin` may change all content and manage accounts. Every write outside
+    the blog requires it. The old backend left gallery, opportunities and
+    upload writes open to anyone.
+  - `editor` is a **blog editor**: it may sign in to the dashboard and
+    create, edit, schedule, publish and delete blog posts, and upload images
+    to the `afosi-blog` bucket. Nothing else: every other write, the admin
+    account endpoints and the applications service all refuse it.
+  - anything else (`user`, the plugin default) can sign in and change nothing.
 - **Passwords:** new ones are scrypt. Accounts imported from the old
   `admin_users` table keep their bcrypt hash, which still works; it is
   rewritten as scrypt on that person's first sign-in. Nobody needs a reset.
@@ -99,6 +108,31 @@ and rewrites every Supabase storage URL to `PUBLIC_UPLOAD_BASE`. The old
   `/api/auth/token` and publishes public keys at `/api/auth/jwks`. The
   applications service (`../server/admin-auth.js`) verifies against those, so
   it can check an admin without holding any shared secret.
+
+## Blog
+
+`/api/blog` (`src/routes/blog.js`, table `blog_posts` from
+`migrations/003_blog.sql`).
+
+- **Public:** `GET /api/blog` (`limit`, `offset`, `category`, `tag`, `q`,
+  `featured=true`, `exclude=<slug>`; returns `total` for paging),
+  `GET /api/blog/categories`, `GET /api/blog/slug/:slug` (counts a view,
+  returns up to three `related` posts). Only posts that are published **and**
+  whose `published_at` has passed are ever returned, so drafts and scheduled
+  posts cannot leak. Listings leave out the body and account ids.
+- **Dashboard** (admin or editor): `GET /admin/all` (`status` =
+  `draft|published|scheduled`, `q`), `GET /admin/stats`, `GET /admin/:id`,
+  `POST /admin`, `PUT /admin/:id`, `PATCH /admin/:id/toggle-featured`,
+  `DELETE /admin/:id`. Only named fields are writable; reading time, author
+  and `updated_by` come from the server. Publishing without a date stamps
+  now (a trigger, so every path agrees); a future date schedules the post.
+- **Content is Markdown**, stored as written. The site renders it with
+  `../src/markdown.js`, which escapes everything and only emits its own
+  tags, with link and image addresses limited to http(s), mailto and site
+  paths. The dashboard's preview uses the same file, and the same
+  stylesheet (`../public/blog-prose.css`).
+- Reachable from the public site only after cutover: before it, `/api/` on
+  api.afosi.org still goes to the old backend, which has no `/api/blog`.
 
 ## Rotating the secret
 

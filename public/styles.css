@@ -60,9 +60,10 @@ a:hover { color: #F26522; }
 .hov-send:hover svg { stroke: #F26522 !important; }
 .hov-launch:hover { background: #F26522 !important; color: #141210 !important; box-shadow: 5px 5px 0 #17150F !important; }
 /* Mobile hamburger + full-screen menu.
-   The 9-link nav row overflows below ~1150px, so the burger takes over there,
-   not at phone width. The "Get involved" CTA survives until phone width. */
-@media (max-width: 1150px) {
+   The 10-link nav row (Blog made it ten) runs out of room below ~1185px, so
+   the burger takes over at 1200px, not at phone width. The "Get involved"
+   CTA survives until phone width. */
+@media (max-width: 1200px) {
   [data-nav-links] { display: none !important; }
   .af-burger { display: flex !important; }
 }
@@ -322,4 +323,29 @@ a:hover { color: #F26522; }
 
 @media (max-width: 1180px) {
   .af-opp-doc-viewer iframe { height: 620px !important; }
+}
+
+/* ── Blog (blog.html, blog-post.html; rendered by src/cms.js) ───────────────── */
+.af-sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.af-blog-card:focus-visible, [data-blog-cat]:focus-visible, [data-blog-more]:focus-visible,
+.af-blog-search input:focus-visible, .af-blog-search button:focus-visible,
+[data-copy-link]:focus-visible, .af-post-foot a:focus-visible {
+  outline: 3px solid #F26522; outline-offset: 3px;
+}
+.af-blog-card h3, .af-blog-card h2 { text-wrap: balance; }
+.af-post-title { text-wrap: balance; }
+
+@media (max-width: 980px) {
+  .af-blog-featured-media { border-right: 0 !important; border-bottom: 2px solid #17150F; min-height: 0 !important; aspect-ratio: 16 / 10; }
+  .af-blog-featured > div:last-child { padding: 30px 26px !important; }
+}
+@media (max-width: 680px) {
+  .af-blog-toolbar { flex-direction: column; align-items: stretch !important; }
+  .af-blog-search input { width: 100% !important; flex: 1; }
+  .af-post-lede { font-size: 18px !important; }
+  .af-post-cover > div { aspect-ratio: 4 / 3 !important; }
+  .af-post-cta { padding: 30px 24px !important; }
 }
