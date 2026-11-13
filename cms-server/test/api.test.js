@@ -206,9 +206,14 @@ for (const [method, url] of [
   ['POST', '/api/news/admin'],
   ['POST', '/api/projects'],
   ['DELETE', '/api/upload'],
+  ['POST', '/api/upload'],
+  ['POST', '/api/blog/admin'],
+  ['PUT', '/api/blog/admin/00000000-0000-4000-8000-000000000000'],
+  ['DELETE', '/api/blog/admin/00000000-0000-4000-8000-000000000000'],
+  ['GET', '/api/blog/admin/all'],
 ]) {
   test(`${method} ${url} without a session is 401`, async () => {
-    const r = await call(method, url, { body: {} });
+    const r = await call(method, url, method === 'GET' ? { origin: null } : { body: {} });
     assert.equal(r.status, 401);
   });
 }
@@ -469,6 +474,278 @@ test('applications service accepts Better Auth admins and legacy tokens, and not
 
   assert.equal((await verifyAdminToken('not.a.jwt')).status, 401);
   assert.equal((await verifyAdminToken('')).status, 401);
+});
+
+// ── blog + blog editors ─────────────────────────────────────────────────────
+// Blog editors are created the way the dashboard's Blog team tab creates
+// them: an admin calling Better Auth's admin endpoints with their session.
+const EDITOR_EMAIL = 'blog.editor@afosi.test';
+const EDITOR_PASS = 'editor password long enough';
+let editorCookie;
+let editorId;
+
+async function uploadAs(cookie, buffer, name, fields = {}) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+  fd.append('file', new Blob([buffer]), name);
+  const res = await fetch(`${base}/api/upload`, { method: 'POST', headers: { cookie, origin: ADMIN }, body: fd });
+  return { status: res.status, json: await res.json() };
+}
+
+const blogPost = (cookie, body) => call('POST', '/api/blog/admin', { cookie, body });
+const blogPut = (cookie, id, body) => call('PUT', `/api/blog/admin/${id}`, { cookie, body });
+
+test('blog team: an admin creates a blog editor login; roles are checked', async () => {
+  const bad = await call('POST', '/api/auth/admin/create-user', {
+    cookie: adminCookie,
+    body: { email: 'typo@afosi.test', password: EDITOR_PASS, name: 'Typo', role: 'editr' },
+  });
+  assert.equal(bad.status, 400, 'a role that does not exist is refused, not stored');
+
+  const created = await call('POST', '/api/auth/admin/create-user', {
+    cookie: adminCookie,
+    body: { email: EDITOR_EMAIL, password: EDITOR_PASS, name: 'Wanjiru Editor', role: 'editor' },
+  });
+  assert.equal(created.status, 200, created.text);
+  assert.equal(created.json.user.role, 'editor');
+  editorId = created.json.user.id;
+
+  const s = await signIn(EDITOR_EMAIL, EDITOR_PASS);
+  assert.equal(s.status, 200, 'the editor can sign in');
+  editorCookie = s.cookie;
+
+  const listed = await call('GET', '/api/auth/admin/list-users?limit=100', { cookie: adminCookie, origin: null });
+  assert.equal(listed.status, 200);
+  assert.ok(listed.json.users.some((u) => u.email === EDITOR_EMAIL));
+});
+
+test('blog editor: blog only, no other content, no accounts', async () => {
+  const forbidden = [
+    ['POST', '/api/news/admin', { title: 'x', slug: 'x', excerpt: 'x', content: 'x', published_date: '2026-01-01' }],
+    ['POST', '/api/projects', { title: 'x', description: 'y' }],
+    ['POST', '/api/opportunities', { title: 'x' }],
+    ['GET', '/api/news/admin/all'],
+    ['DELETE', '/api/upload', { path: 'afosi-images/x.png' }],
+  ];
+  for (const [method, url, body] of forbidden) {
+    const r = await call(method, url, { cookie: editorCookie, body, origin: method === 'GET' ? null : undefined });
+    assert.equal(r.status, 403, `${method} ${url}`);
+  }
+
+  // Better Auth's own admin endpoints: an editor's session can do none of it.
+  const list = await call('GET', '/api/auth/admin/list-users', { cookie: editorCookie, origin: null });
+  assert.equal(list.status, 403, 'cannot list accounts');
+  const make = await call('POST', '/api/auth/admin/create-user', {
+    cookie: editorCookie, body: { email: 'x2@afosi.test', password: EDITOR_PASS, name: 'X', role: 'admin' },
+  });
+  assert.equal(make.status, 403, 'cannot create accounts');
+  const promote = await call('POST', '/api/auth/admin/set-role', {
+    cookie: editorCookie, body: { userId: editorId, role: 'admin' },
+  });
+  assert.equal(promote.status, 403, 'cannot promote itself');
+  const { rows } = await pool.query(`SELECT role FROM "user" WHERE id = $1`, [editorId]);
+  assert.equal(rows[0].role, 'editor');
+
+  // Nor job applications, which live in another service (../server) and are
+  // checked there against the same session's token.
+  const { verifyAdminToken } = await import('../../server/admin-auth.js');
+  const tok = await call('GET', '/api/auth/token', { cookie: editorCookie, origin: null });
+  assert.equal(tok.status, 200);
+  assert.equal((await verifyAdminToken(tok.json.token)).status, 403, 'the applications service refuses an editor');
+});
+
+test('blog: draft, publish, public reads, view counter, related, delete', async () => {
+  const draft = await blogPost(editorCookie, {
+    title: 'Planting 10,000 trees in Kajiado',
+    excerpt: 'How the youth hub turned a dry season into a planting season.',
+    content: `# Heading\n\n${'word '.repeat(450)}\n\n![a seedling](https://api.afosi.org/uploads/afosi-blog/x.png)`,
+    category: 'Environment',
+    tags: ['Trees', 'trees', '  Climate  ', ''],
+    cover_image_url: 'https://api.afosi.org/uploads/afosi-blog/cover.png',
+    cover_image_alt: 'Volunteers planting seedlings',
+  });
+  assert.equal(draft.status, 201, draft.text);
+  const post = draft.json.data;
+  assert.equal(post.slug, 'planting-10000-trees-in-kajiado', 'slug made from the title');
+  assert.equal(post.status, 'draft');
+  assert.equal(post.published_at, null);
+  assert.equal(post.author_name, 'Wanjiru Editor', 'byline defaults to the signed-in name');
+  assert.equal(post.author_id, editorId);
+  assert.equal(post.reading_minutes, 2, '~450 words is about two minutes');
+  assert.deepEqual(post.tags, ['Trees', 'Climate'], 'tags trimmed, blanks and repeats dropped');
+
+  // A draft is invisible to every public path.
+  assert.equal((await call('GET', '/api/blog', { origin: null })).json.total, 0);
+  assert.equal((await call('GET', `/api/blog/slug/${post.slug}`, { origin: null })).status, 404);
+
+  const pub = await blogPut(editorCookie, post.id, { status: 'published' });
+  assert.equal(pub.status, 200, pub.text);
+  assert.ok(pub.json.data.published_at, 'publishing without a date stamps now');
+  assert.equal(pub.json.data.scheduled, false);
+
+  const list = await call('GET', '/api/blog', { origin: null });
+  assert.equal(list.json.total, 1);
+  const card = list.json.data[0];
+  assert.equal(card.slug, post.slug);
+  assert.equal(card.content, undefined, 'listings leave the body out');
+  assert.equal(card.author_id, undefined, 'account ids are not public');
+  assert.equal(card.status, undefined);
+
+  const cats = await call('GET', '/api/blog/categories', { origin: null });
+  assert.deepEqual(cats.json.data, [{ category: 'Environment', count: 1 }]);
+
+  const before = (await pool.query('SELECT updated_at FROM blog_posts WHERE id = $1', [post.id])).rows[0].updated_at;
+  const read1 = await call('GET', `/api/blog/slug/${post.slug}`, { origin: null });
+  const read2 = await call('GET', `/api/blog/slug/${post.slug}`, { origin: null });
+  assert.equal(read1.status, 200);
+  assert.ok(read1.json.data.content.startsWith('# Heading'));
+  assert.equal(read2.json.data.author_id, undefined);
+  const after = (await pool.query('SELECT views, updated_at FROM blog_posts WHERE id = $1', [post.id])).rows[0];
+  assert.equal(after.views, 2, 'each read counts');
+  assert.equal(after.updated_at.getTime(), before.getTime(), 'a read is not an edit');
+
+  // A second post shows up as related reading on the first.
+  const other = await blogPost(adminCookie, { title: 'Second story', category: 'Environment', status: 'published' });
+  assert.equal(other.status, 201, other.text);
+  assert.equal(other.json.data.author_name, 'Test Admin');
+  const withRelated = await call('GET', `/api/blog/slug/${post.slug}`, { origin: null });
+  assert.deepEqual(withRelated.json.related.map((r) => r.slug), ['second-story']);
+
+  const unpub = await blogPut(editorCookie, post.id, { status: 'draft' });
+  assert.equal(unpub.json.data.status, 'draft');
+  assert.equal((await call('GET', `/api/blog/slug/${post.slug}`, { origin: null })).status, 404, 'unpublished again');
+
+  const del = await call('DELETE', `/api/blog/admin/${post.id}`, { cookie: editorCookie });
+  assert.equal(del.status, 200);
+  assert.equal((await call('GET', `/api/blog/admin/${post.id}`, { cookie: editorCookie, origin: null })).status, 404);
+  await call('DELETE', `/api/blog/admin/${other.json.data.id}`, { cookie: adminCookie });
+});
+
+test('blog: a scheduled post stays hidden until its time', async () => {
+  const future = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+  const r = await blogPost(editorCookie, { title: 'Next week', status: 'published', published_at: future });
+  assert.equal(r.status, 201, r.text);
+  assert.equal(r.json.data.scheduled, true);
+  assert.equal((await call('GET', '/api/blog/slug/next-week', { origin: null })).status, 404);
+  assert.equal((await call('GET', '/api/blog', { origin: null })).json.total, 0);
+
+  const scheduled = await call('GET', '/api/blog/admin/all?status=scheduled', { cookie: editorCookie, origin: null });
+  assert.deepEqual(scheduled.json.data.map((p) => p.slug), ['next-week']);
+  const stats = await call('GET', '/api/blog/admin/stats', { cookie: editorCookie, origin: null });
+  assert.equal(stats.json.data.scheduled, 1);
+  assert.equal(stats.json.data.published, 0);
+
+  // Moving the date into the past releases it.
+  await blogPut(editorCookie, r.json.data.id, { published_at: new Date(Date.now() - 60_000).toISOString() });
+  assert.equal((await call('GET', '/api/blog/slug/next-week', { origin: null })).status, 200);
+  await call('DELETE', `/api/blog/admin/${r.json.data.id}`, { cookie: editorCookie });
+});
+
+test('blog: validation, duplicate slugs and no mass assignment', async () => {
+  const cases = [
+    [{}, 'Title is required'],
+    [{ title: '   ' }, 'Title is required'],
+    [{ title: 'x'.repeat(201) }, 'Title must be at most 200 characters'],
+    [{ title: 'ok', cover_image_url: 'javascript:alert(1)' }, 'Cover image must be an http(s) URL'],
+    [{ title: 'ok', tags: 'not, a, list' }, 'Tags must be a list'],
+    [{ title: 'ok', tags: Array.from({ length: 13 }, (_, i) => `t${i}`) }, 'At most 12 tags'],
+    [{ title: 'ok', status: 'live' }, 'Status must be draft or published'],
+    [{ title: 'ok', published_at: 'someday' }, 'Publish date is not a valid date'],
+    [{ title: 'ok', featured: 'yes' }, 'Featured must be true or false'],
+    [{ title: 'ok', category: '' }, 'Category is required'],
+    [{ title: 'ok', slug: '!!!' }, 'Slug must contain letters or numbers'],
+  ];
+  for (const [body, message] of cases) {
+    const r = await blogPost(editorCookie, body);
+    assert.equal(r.status, 400, JSON.stringify(body));
+    assert.equal(r.json.message, message);
+  }
+
+  const a = await blogPost(editorCookie, { title: 'Same title', slug: 'Same Title!' });
+  assert.equal(a.json.data.slug, 'same-title', 'a typed slug is normalised');
+  const dup = await blogPost(editorCookie, { title: 'Same title' });
+  assert.equal(dup.status, 400);
+  assert.equal(dup.json.message, 'A blog post with this slug already exists');
+
+  const sneaky = await blogPut(editorCookie, a.json.data.id, {
+    excerpt: 'changed', views: 99999, author_id: crypto.randomUUID(), id: crypto.randomUUID(), reading_minutes: 500,
+  });
+  assert.equal(sneaky.status, 200);
+  assert.equal(sneaky.json.data.excerpt, 'changed');
+  assert.equal(sneaky.json.data.views, 0);
+  assert.equal(sneaky.json.data.author_id, editorId);
+  assert.equal(sneaky.json.data.id, a.json.data.id);
+  assert.equal(sneaky.json.data.reading_minutes, 1, 'reading time comes from the content only');
+
+  const clearAlt = await blogPut(editorCookie, a.json.data.id, { cover_image_alt: null, excerpt: null });
+  assert.equal(clearAlt.status, 200, 'null clears a nullable field and blanks a text one');
+  assert.equal(clearAlt.json.data.cover_image_alt, null);
+  assert.equal(clearAlt.json.data.excerpt, '');
+
+  assert.equal((await blogPut(editorCookie, a.json.data.id, { nothing: 1 })).status, 400);
+  assert.equal((await blogPut(editorCookie, 'not-a-uuid', { title: 'x' })).status, 404);
+  await call('DELETE', `/api/blog/admin/${a.json.data.id}`, { cookie: editorCookie });
+});
+
+test('blog: search, category, tag, featured and paging', async () => {
+  const seed = [
+    { title: 'Youth climate summit recap', category: 'Events', tags: ['Climate'], featured: true },
+    { title: 'Coding club graduates', category: 'Education', tags: ['Tech', 'Youth'] },
+    { title: 'Water project 100% complete', category: 'Projects', tags: ['Water'] },
+    { title: 'Another education story', category: 'Education', tags: ['Youth'] },
+  ];
+  const ids = [];
+  for (const [i, p] of seed.entries()) {
+    const r = await blogPost(adminCookie, {
+      ...p, status: 'published', published_at: new Date(Date.now() - (i + 1) * 3_600_000).toISOString(),
+    });
+    assert.equal(r.status, 201, r.text);
+    ids.push(r.json.data.id);
+  }
+  const get = async (qs) => (await call('GET', `/api/blog?${qs}`, { origin: null })).json;
+
+  assert.deepEqual((await get('category=Education')).data.map((p) => p.slug), ['coding-club-graduates', 'another-education-story']);
+  assert.equal((await get('tag=Youth')).total, 2);
+  assert.deepEqual((await get('featured=true')).data.map((p) => p.slug), ['youth-climate-summit-recap']);
+  assert.equal((await get('q=CODING')).total, 1, 'search ignores case');
+  assert.equal((await get('q=100%25')).total, 1, 'a % in the search is a literal %');
+  assert.equal((await get('q=%25')).total, 1, 'a lone % does not match everything');
+  assert.equal((await get('exclude=coding-club-graduates')).total, 3);
+
+  const page1 = await get('limit=3');
+  const page2 = await get('limit=3&offset=3');
+  assert.equal(page1.total, 4);
+  assert.equal(page1.data.length, 3);
+  assert.equal(page2.data.length, 1);
+  assert.equal(page1.data[0].slug, 'youth-climate-summit-recap', 'newest first');
+
+  for (const id of ids) await call('DELETE', `/api/blog/admin/${id}`, { cookie: adminCookie });
+});
+
+test('blog upload: an editor may add images to the blog bucket and nowhere else', async () => {
+  const ok = await uploadAs(editorCookie, PNG, 'cover.png', { bucket: 'afosi-blog' });
+  assert.equal(ok.status, 201, JSON.stringify(ok.json));
+  assert.match(ok.json.url, /^https:\/\/api\.afosi\.org\/uploads\/afosi-blog\/\d{4}\/\d{2}\/[0-9a-f-]+\.png$/);
+
+  assert.equal((await uploadAs(editorCookie, PNG, 'x.png', { bucket: 'afosi-images' })).status, 403);
+  assert.equal((await uploadAs(editorCookie, PNG, 'x.png')).status, 403, 'the default bucket is not the blog');
+
+  const pdf = Buffer.concat([Buffer.from('%PDF-1.7\n'), crypto.randomBytes(32)]);
+  const refused = await uploadAs(editorCookie, pdf, 'doc.pdf', { bucket: 'afosi-blog' });
+  assert.equal(refused.status, 400, 'images only in the blog bucket');
+
+  assert.equal((await uploadAs(adminCookie, PNG, 'a.png', { bucket: 'afosi-blog' })).status, 201, 'admins too');
+});
+
+test('blog team: banning an editor ends their access at once', async () => {
+  const ban = await call('POST', '/api/auth/admin/ban-user', { cookie: adminCookie, body: { userId: editorId } });
+  assert.equal(ban.status, 200, ban.text);
+  const r = await blogPost(editorCookie, { title: 'After the ban' });
+  assert.equal(r.status, 401, 'the old session no longer works');
+  assert.equal((await signIn(EDITOR_EMAIL, EDITOR_PASS)).status, 403, 'and cannot sign in again');
+
+  await call('POST', '/api/auth/admin/unban-user', { cookie: adminCookie, body: { userId: editorId } });
+  assert.equal((await signIn(EDITOR_EMAIL, EDITOR_PASS)).status, 200, 'unbanning restores it');
 });
 
 // Last, because it spends this address's sign-in budget.

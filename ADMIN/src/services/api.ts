@@ -300,4 +300,68 @@ export const uploadAPI = {
   // Explicit bucket uploads
   uploadNewsFile: async (file: File) => uploadToServer(file, 'afosi-news'),
   uploadProjectImage: async (file: File) => uploadToServer(file, 'afosi-projects'),
+  // The only bucket a blog editor may use; images only (checked server-side).
+  uploadBlogImage: async (file: File) => uploadToServer(file, 'afosi-blog'),
+};
+
+// ── Blog ────────────────────────────────────────────────────────────────────
+// Admins and blog editors (role "editor") may use all of this. The server
+// computes reading time, stamps the publish date and records who wrote and
+// last changed each post.
+export type BlogStatus = 'draft' | 'published';
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content?: string;
+  cover_image_url: string | null;
+  cover_image_alt: string | null;
+  category: string;
+  tags: string[];
+  status: BlogStatus;
+  published_at: string | null;
+  featured: boolean;
+  author_id: string | null;
+  author_name: string;
+  reading_minutes: number;
+  views: number;
+  scheduled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type BlogPostInput = Partial<Pick<BlogPost,
+  'title' | 'slug' | 'excerpt' | 'content' | 'cover_image_url' | 'cover_image_alt' | 'category' |
+  'tags' | 'status' | 'published_at' | 'featured' | 'author_name'>>;
+
+export interface BlogStats {
+  total: number;
+  published: number;
+  scheduled: number;
+  drafts: number;
+  totalViews: number;
+  categories: string[];
+  tags: string[];
+}
+
+export const blogAPI = {
+  list: (params: { status?: string; q?: string; limit?: number; offset?: number } = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== '' && v !== 'all') q.append(k, String(v));
+    });
+    const s = q.toString();
+    return fetchAPI(`/blog/admin/all${s ? `?${s}` : ''}`) as Promise<{ data: BlogPost[]; total: number }>;
+  },
+  stats: () => fetchAPI('/blog/admin/stats') as Promise<{ data: BlogStats }>,
+  get: (id: string) => fetchAPI(`/blog/admin/${id}`) as Promise<{ data: BlogPost }>,
+  create: (data: BlogPostInput) =>
+    fetchAPI('/blog/admin', { method: 'POST', body: JSON.stringify(data) }) as Promise<{ data: BlogPost; message: string }>,
+  update: (id: string, data: BlogPostInput) =>
+    fetchAPI(`/blog/admin/${id}`, { method: 'PUT', body: JSON.stringify(data) }) as Promise<{ data: BlogPost; message: string }>,
+  toggleFeatured: (id: string) =>
+    fetchAPI(`/blog/admin/${id}/toggle-featured`, { method: 'PATCH' }) as Promise<{ data: BlogPost }>,
+  delete: (id: string) => fetchAPI(`/blog/admin/${id}`, { method: 'DELETE' }),
 };

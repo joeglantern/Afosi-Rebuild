@@ -141,7 +141,7 @@ const Login = ({ onLogin }: LoginProps) => {
                 transition={{ delay: 0.3 }}
                 className="text-3xl font-heading font-bold text-center mb-2"
               >
-                Admin Portal
+                AFOSI Dashboard
               </motion.h1>
               
               <motion.div
@@ -151,7 +151,7 @@ const Login = ({ onLogin }: LoginProps) => {
                 className="flex items-center justify-center gap-2 text-white/90"
               >
                 <Sparkles size={16} />
-                <p className="text-sm font-medium">AFOSI Management System</p>
+                <p className="text-sm font-medium">For admins and blog editors</p>
               </motion.div>
             </div>
           </div>
@@ -189,6 +189,7 @@ const Login = ({ onLogin }: LoginProps) => {
                 <div className="relative group">
                   <input
                     type="email"
+                    autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="admin@afosi.org"
@@ -211,6 +212,7 @@ const Login = ({ onLogin }: LoginProps) => {
                 <div className="relative group">
                   <input
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -223,6 +225,7 @@ const Login = ({ onLogin }: LoginProps) => {
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
                   >
@@ -259,7 +262,7 @@ const Login = ({ onLogin }: LoginProps) => {
               className="mt-6 text-center"
             >
               <p className="text-xs text-muted-foreground">
-                Secure access to AFOSI administrative functions
+                Accounts are created by an AFOSI admin. Forgot your password? Ask an admin to reset it.
               </p>
             </motion.div>
           </div>

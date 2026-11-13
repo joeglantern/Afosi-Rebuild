@@ -10,7 +10,13 @@
 // - Passwords: new hashes use Better Auth's scrypt. Hashes imported from the
 //   old system are bcrypt; those are still accepted, and rewritten as scrypt
 //   the first time that person signs in, so nobody needs a password reset.
-// - Only the "admin" role may use the content API (see http.js).
+// - Roles: "admin" may use the whole content API and manage accounts.
+//   "editor" (a blog editor) may sign in to the dashboard and manage blog
+//   posts, nothing else: no other content, no accounts (see http.js). Any
+//   other role ("user", the plugin default) can sign in but change nothing.
+//   The roles are listed explicitly, so Better Auth refuses to store a role
+//   that is not one of them (a typo would otherwise be saved and lock the
+//   person out without any error).
 // - The jwt plugin lets other services on the box (the applications API in
 //   ../server) check an admin's identity against a public key set, instead of
 //   sharing a signing secret the way the old setup did.
@@ -18,6 +24,7 @@
 import bcrypt from 'bcryptjs';
 import { betterAuth } from 'better-auth';
 import { admin, jwt } from 'better-auth/plugins';
+import { defaultAc, adminAc, userAc } from 'better-auth/plugins/admin/access';
 import { createAuthMiddleware } from 'better-auth/api';
 import { hashPassword, verifyPassword } from 'better-auth/crypto';
 import { pool } from './db.js';
@@ -25,6 +32,18 @@ import { config } from './config.js';
 
 const LEGACY_BCRYPT = /^\$2[aby]\$\d{2}\$/;
 export const isLegacyHash = (hash) => typeof hash === 'string' && LEGACY_BCRYPT.test(hash);
+
+export const ROLE_ADMIN = 'admin';
+export const ROLE_EDITOR = 'editor';
+
+// What each role may do to accounts through Better Auth's admin endpoints.
+// Admins keep the plugin's default rights; a blog editor gets none, so an
+// editor's session cannot list, create, ban or re-role anyone.
+const accountRoles = {
+  [ROLE_ADMIN]: adminAc,
+  user: userAc,
+  [ROLE_EDITOR]: defaultAc.newRole({ user: [], session: [] }),
+};
 
 export const auth = betterAuth({
   appName: 'Afosi Admin',
@@ -77,7 +96,7 @@ export const auth = betterAuth({
   },
 
   plugins: [
-    admin({ adminRoles: ['admin'], defaultRole: 'user' }),
+    admin({ adminRoles: [ROLE_ADMIN], defaultRole: 'user', roles: accountRoles }),
     // By default this plugin signs a fresh JWT onto every session response,
     // which makes sign-in and every session check depend on decrypting the
     // signing key. Found in testing: if that key cannot be decrypted (for

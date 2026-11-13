@@ -66,6 +66,25 @@ export const newsAPI = {
   getBySlug: (slug) => fetchAPI(`/news/slug/${slug}`),
 };
 
+// ── Blog ─────────────────────────────────────────────────────────────────────
+// Written in the dashboard by admins and blog editors (cms-server
+// routes/blog.js). Only published posts whose publish time has passed are
+// ever returned here.
+export const blogAPI = {
+  getAll(params = {}) {
+    const q = new URLSearchParams();
+    for (const key of ['category', 'tag', 'q', 'exclude', 'limit', 'offset']) {
+      if (params[key] !== undefined && params[key] !== null && params[key] !== '') q.append(key, String(params[key]));
+    }
+    if (params.featured) q.append('featured', 'true');
+    const s = q.toString();
+    return fetchAPI(`/blog${s ? `?${s}` : ''}`);
+  },
+  getCategories: () => fetchAPI('/blog/categories'),
+  // Returns { data: post, related: [up to 3 posts] }.
+  getBySlug: (slug) => fetchAPI(`/blog/slug/${encodeURIComponent(slug)}`),
+};
+
 // ── Gallery ──────────────────────────────────────────────────────────────────
 export const galleryAPI = {
   getAll(category) {

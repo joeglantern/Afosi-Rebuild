@@ -13,6 +13,8 @@ export default defineConfig({
         platforms: resolve(__dirname, 'platforms.html'),
         team: resolve(__dirname, 'team.html'),
         news: resolve(__dirname, 'news.html'),
+        blog: resolve(__dirname, 'blog.html'),
+        blogPost: resolve(__dirname, 'blog-post.html'),
         gallery: resolve(__dirname, 'gallery.html'),
         opportunities: resolve(__dirname, 'opportunities.html'),
         opportunity: resolve(__dirname, 'opportunity.html'),

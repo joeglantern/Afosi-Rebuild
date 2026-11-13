@@ -1,0 +1,55 @@
+/* Long-form text of a blog post: every element src/markdown.js can produce.
+   Linked by blog-post.html, and imported by the dashboard's blog editor
+   (ADMIN/src/components/BlogAdminPanel.tsx) so its preview is the real thing.
+   Everything is scoped to .af-prose, so it is safe to load anywhere. */
+/* 34em of Manrope is about 72 characters a line: the comfortable 65-75. */
+.af-prose { max-width: 34em; font-size: 19px; line-height: 1.75; color: #2A261F; overflow-wrap: break-word; }
+.af-prose > * { margin: 0; }
+.af-prose > * + * { margin-top: 1.15em; }
+.af-prose h2, .af-prose h3, .af-prose h4 {
+  font-family: 'Space Grotesk', sans-serif; color: #17150F; font-weight: 700;
+  letter-spacing: -0.01em; scroll-margin-top: 110px; text-wrap: balance;
+}
+.af-prose h2 { font-size: 31px; line-height: 1.15; margin-top: 1.9em; }
+.af-prose h3 { font-size: 24px; line-height: 1.2; margin-top: 1.7em; }
+.af-prose h4 { font-size: 19px; line-height: 1.3; margin-top: 1.5em; text-transform: uppercase; letter-spacing: 0.04em; }
+.af-prose > h2:first-child, .af-prose > h3:first-child { margin-top: 0; }
+.af-prose h2 + *, .af-prose h3 + *, .af-prose h4 + * { margin-top: 0.6em; }
+.af-prose strong { color: #17150F; font-weight: 800; }
+.af-prose a { color: #17150F; font-weight: 700; text-decoration: underline; text-decoration-color: #F26522; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.af-prose a:hover { color: #C24E12; }
+.af-prose a:focus-visible { outline: 3px solid #F26522; outline-offset: 2px; }
+.af-prose ul, .af-prose ol { padding-left: 1.4em; }
+.af-prose li + li { margin-top: 0.45em; }
+.af-prose li::marker { color: #F26522; font-weight: 700; }
+.af-prose blockquote {
+  margin-top: 1.6em; margin-bottom: 1.6em; padding: 4px 0 4px 26px; border-left: 6px solid #F26522;
+  font-family: 'Space Grotesk', sans-serif; font-size: 24px; line-height: 1.45; font-weight: 500; color: #17150F;
+}
+.af-prose blockquote > * + * { margin-top: 0.8em; }
+.af-prose blockquote > * { margin: 0; }
+.af-prose figure { margin-top: 2.2em; margin-bottom: 2.2em; }
+.af-prose figure img, .af-prose p img {
+  display: block; width: 100%; height: auto; border: 2px solid #17150F; box-shadow: 7px 7px 0 #17150F; background: #141210;
+}
+.af-prose figcaption { font-family: 'Space Mono', monospace; font-size: 12.5px; line-height: 1.6; color: #6E6559; margin-top: 16px; }
+.af-prose code {
+  font-family: 'Space Mono', monospace; font-size: 0.82em; background: #EFE7D8;
+  padding: 2px 6px; border: 1px solid rgba(23,21,15,0.15);
+}
+.af-prose pre {
+  background: #141210; color: #F2EDE4; padding: 22px 24px; overflow-x: auto;
+  border: 2px solid #17150F; font-size: 14px; line-height: 1.65;
+}
+.af-prose pre code { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; }
+.af-prose hr {
+  border: 0; height: 2px; margin-top: 2.6em; margin-bottom: 2.6em;
+  background: repeating-linear-gradient(90deg, #17150F 0 10px, transparent 10px 18px);
+}
+
+@media (max-width: 680px) {
+  .af-prose { font-size: 17.5px; line-height: 1.72; }
+  .af-prose h2 { font-size: 25px; }
+  .af-prose h3 { font-size: 21px; }
+  .af-prose blockquote { font-size: 20px; padding-left: 18px; }
+}

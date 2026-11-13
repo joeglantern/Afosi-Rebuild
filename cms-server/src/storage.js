@@ -14,7 +14,11 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { config } from './config.js';
 
-export const BUCKETS = ['afosi-images', 'afosi-news', 'afosi-projects'];
+export const BUCKETS = ['afosi-images', 'afosi-news', 'afosi-projects', 'afosi-blog'];
+
+// The one bucket a blog editor may upload to (routes/upload.js). Images only:
+// a blog post shows pictures, and nothing else should be hosted under it.
+export const BLOG_BUCKET = 'afosi-blog';
 export const DEFAULT_BUCKET = 'afosi-images';
 
 const SIGNATURES = [

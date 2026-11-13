@@ -8,11 +8,30 @@
 
 import { createAuthClient } from "better-auth/react";
 import { adminClient } from "better-auth/client/plugins";
+import { defaultAc, adminAc, userAc } from "better-auth/plugins/admin/access";
+
+// The same roles as cms-server/src/auth.js, so role names type-check here.
+// The server is what enforces them; this only describes them.
+//   admin   everything, including accounts (the Blog team tab)
+//   editor  a blog editor: the Blog tab only
+//   user    can sign in, can change nothing
+const roles = {
+  admin: adminAc,
+  user: userAc,
+  editor: defaultAc.newRole({ user: [], session: [] }),
+};
+
+export type Role = keyof typeof roles;
+export const ROLE_LABELS: Record<Role, string> = {
+  admin: "Admin",
+  editor: "Blog editor",
+  user: "No access",
+};
 
 export const authClient = createAuthClient({
   baseURL: window.location.origin,
   basePath: "/api/auth",
-  plugins: [adminClient()],
+  plugins: [adminClient({ roles })],
 });
 
 export type Session = typeof authClient.$Infer.Session;
